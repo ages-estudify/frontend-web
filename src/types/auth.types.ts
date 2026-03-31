@@ -11,6 +11,7 @@ export interface RegisterResponse {
   data: {
     userId: string;
     token: string;
+    refreshToken: string;
     role: string;
     planExpirationDate: Date;
   };
