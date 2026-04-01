@@ -1,12 +1,13 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { QuestionsPage } from '../pages/QuestionsPage'
-import { NotFoundPage } from '../pages/NotFoundPage'
-import Layout from '../Layout'
-import { TrackPage } from '../pages/TestPage'
-import { ExamsPage } from '../pages/ExamsPage'
-import { ImportCSVPage } from '../pages/ImportCSVPage'
-import { UsersPage } from '../pages/UsersPage'
-import { DashboardPage } from '../pages/DashboardPage'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { LoginPage } from '../pages/LoginPage';
+import { QuestionsPage } from '../pages/QuestionsPage';
+import { NotFoundPage } from '../pages/NotFoundPage';
+import Layout from '../layout';
+import { TrackPage } from '../pages/TestPage';
+import { ExamsPage } from '../pages/ExamsPage';
+import { ImportCSVPage } from '../pages/ImportCSVPage';
+import { UsersPage } from '../pages/UsersPage';
+import { DashboardPage } from '../pages/DashboardPage';
 
 const router = createBrowserRouter([
   {
@@ -15,36 +16,44 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <QuestionsPage />
+        element: <QuestionsPage />,
       },
       {
         path: 'trilha',
-        element: <TrackPage />
+        element: <TrackPage />,
       },
       {
         path: 'simulados',
-        element: <ExamsPage />
+        element: <ExamsPage />,
       },
       {
         path: 'importarCSV',
-        element: <ImportCSVPage />
+        element: <ImportCSVPage />,
       },
       {
         path: 'usuarios',
-        element: <UsersPage />
+        element: <UsersPage />,
       },
       {
         path: 'dashboard',
-        element: <DashboardPage />
+        element: <DashboardPage />,
       },
-    ]
+    ],
+  },
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/login',
+    element: <LoginPage />,
   },
   {
     path: '*',
     element: <NotFoundPage />,
   },
-])
+]);
 
 export function Routes() {
-  return <RouterProvider router={router} />
+  return <RouterProvider router={router} />;
 }
