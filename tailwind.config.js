@@ -4,6 +4,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        purple100: "#3E2B5C",
+        white: "#FFFFFF",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
