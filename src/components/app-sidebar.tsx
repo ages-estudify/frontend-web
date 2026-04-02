@@ -48,7 +48,7 @@ export function AppSidebar() {
   const location = useLocation()
 
   return (
-    <Sidebar className="!w-[230px]">
+    <Sidebar className="!w-[200px]">
       <SidebarContent>
         <SidebarGroup>
           <div className="flex gap-3 py-10 px-2">
