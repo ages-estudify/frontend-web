@@ -49,6 +49,10 @@ const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
+    path: '/admin/dashboard',
+    element: <DashboardPage />,
+  },
+  {
     path: '*',
     element: <NotFoundPage />,
   },
