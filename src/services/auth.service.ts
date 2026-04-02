@@ -10,11 +10,11 @@ export interface LoginResponse {
   data: {
     token: string
     role: string
-    planExpirationDate: string
+    planActive: boolean
   }
 }
 
-export async function loginService(payload: LoginPayload): Promise<LoginResponse> {
+export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const response = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -23,7 +23,7 @@ export async function loginService(payload: LoginPayload): Promise<LoginResponse
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
-    throw new Error(error?.message ?? 'Erro ao realizar login. Tente novamente.')
+    throw new Error(error?.message ?? 'Não foi possível realizar login. Tente novamente.')
   }
 
   return response.json()

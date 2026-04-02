@@ -1,4 +1,4 @@
-import { LoginForm } from '../components/login/LoginForm'
+import { LoginForm } from '@/components/login/LoginForm'
 
 export function LoginPage() {
   return (
@@ -13,7 +13,7 @@ export function LoginPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <h1
   className="text-7xl font-black text-[#7AE04A]"
-  style={{ fontFamily: "'Nunito', sans-serif", letterSpacing: '-2px' }}
+  style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-2px' }}
 >
   Estudify
 </h1>
