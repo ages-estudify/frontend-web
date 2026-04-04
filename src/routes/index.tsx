@@ -1,11 +1,43 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { HomePage } from '../pages/HomePage'
+import { QuestionsPage } from '../pages/QuestionsPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import Layout from '../Layout'
+import { TrackPage } from '../pages/TestPage'
+import { ExamsPage } from '../pages/ExamsPage'
+import { ImportCSVPage } from '../pages/ImportCSVPage'
+import { UsersPage } from '../pages/UsersPage'
+import { DashboardPage } from '../pages/DashboardPage'
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <HomePage />,
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: <QuestionsPage />
+      },
+      {
+        path: 'trilha',
+        element: <TrackPage />
+      },
+      {
+        path: 'simulados',
+        element: <ExamsPage />
+      },
+      {
+        path: 'importarCSV',
+        element: <ImportCSVPage />
+      },
+      {
+        path: 'usuarios',
+        element: <UsersPage />
+      },
+      {
+        path: 'dashboard',
+        element: <DashboardPage />
+      },
+    ]
   },
   {
     path: '*',
