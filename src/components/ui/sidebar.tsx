@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable react-refresh/only-export-components */
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -253,6 +254,7 @@ function SidebarTrigger({
       variant="ghost"
       size="icon-sm"
       className={cn(className)}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onClick={(event: any) => {
         onClick?.(event)
         toggleSidebar()

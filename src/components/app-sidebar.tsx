@@ -1,4 +1,4 @@
-import { BookText, Home, Import, Route, SignalHigh, Users, LogOut } from "lucide-react"
+import { LogOut } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -11,39 +11,7 @@ import {
 } from "./ui/sidebar"
 import SideBarLogo from "../assets/SideBarLogo.png"
 import { Button } from "./ui/button"
-
-export const navItems = [
-  {
-    title: "Questões",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "Trilha",
-    url: "/trilha",
-    icon: Route,
-  },
-  {
-    title: "Simulados",
-    url: "/simulados",
-    icon: BookText,
-  },
-  {
-    title: "Importar CSV",
-    url: "/importarCSV",
-    icon: Import,
-  },
-  {
-    title: "Usuários",
-    url: "/usuarios",
-    icon: Users,
-  },
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: SignalHigh,
-  },
-]
+import { navItems } from "./sidebar-items"
 
 export function AppSidebar() {
   const location = useLocation()
