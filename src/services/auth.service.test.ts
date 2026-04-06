@@ -1,56 +1,51 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { login } from '@/services/auth.service'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { login } from '@/services/auth.service';
+import api from '@/services/api';
 
 describe('auth.service', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-  })
+    vi.resetAllMocks();
+  });
 
   afterEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
   it('deve retornar dados do usuário ao fazer login com sucesso', async () => {
     const mockResponse = {
-      success: true,
       data: {
-        token: 'jwt-token',
-        role: 'ADMIN',
-        planActive: false,
+        success: true,
+        data: {
+          token: 'jwt-token',
+          role: 'ADMIN',
+          planActive: false,
+        },
       },
-    }
+    };
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockResponse,
-    })
+    vi.spyOn(api, 'post').mockResolvedValue(mockResponse);
 
-    const result = await login({ email: 'admin@test.com', password: '123456' })
+    const result = await login({ email: 'admin@test.com', password: '123456' });
 
-    expect(result.success).toBe(true)
-    expect(result.data.token).toBe('jwt-token')
-    expect(result.data.role).toBe('ADMIN')
-  })
+    expect(result.data.token).toBe('jwt-token');
+    expect(result.data.role).toBe('ADMIN');
+  });
 
   it('deve lançar erro quando a API retornar falha', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      json: async () => ({ message: 'Credenciais inválidas' }),
-    })
+    vi.spyOn(api, 'post').mockRejectedValue(new Error('Credenciais inválidas'));
 
     await expect(login({ email: 'admin@test.com', password: 'errado' })).rejects.toThrow(
-      'Credenciais inválidas',
-    )
-  })
+      'Credenciais inválidas'
+    );
+  });
 
   it('deve lançar erro genérico quando API não retornar mensagem', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      json: async () => ({}),
-    })
+    vi.spyOn(api, 'post').mockRejectedValue(
+      new Error('Não foi possível realizar login. Tente novamente.')
+    );
 
     await expect(login({ email: 'admin@test.com', password: 'errado' })).rejects.toThrow(
-      'Não foi possível realizar login. Tente novamente.',
-    )
-  })
-})
+      'Não foi possível realizar login. Tente novamente.'
+    );
+  });
+});

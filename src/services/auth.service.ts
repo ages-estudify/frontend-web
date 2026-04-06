@@ -1,30 +1,17 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import api from './api';
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+} from '@/types/auth.types';
 
-export interface LoginPayload {
-  email: string
-  password: string
-}
+export const login = async (payload: LoginRequest): Promise<LoginResponse> => {
+  const response = await api.post('/auth/login', payload);
+  return response.data;
+};
 
-export interface LoginResponse {
-  success: boolean
-  data: {
-    token: string
-    role: string
-    planActive: boolean
-  }
-}
-
-export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}))
-    throw new Error(error?.message ?? 'Não foi possível realizar login. Tente novamente.')
-  }
-
-  return response.json()
-}
+export const register = async (body: RegisterRequest): Promise<RegisterResponse> => {
+  const response = await api.post('/auth/register', body);
+  return response.data;
+};

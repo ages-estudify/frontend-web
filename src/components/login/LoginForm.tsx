@@ -1,51 +1,40 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { login } from '@/services/auth.service'
-import { storage } from '@/utils/storage'
-import { InputField } from '@/components/login/InputField'
-import { EyeIcon, EyeOffIcon } from '@/components/icons/EyeIcons'
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { InputField } from '@/components/InputField';
+import { EyeIcon, EyeOffIcon } from '@/components/icons/EyeIcons';
 
 export function LoginForm() {
-  const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
-  const [apiError, setApiError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [apiError, setApiError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   function validate() {
-    const newErrors: { email?: string; password?: string } = {}
-    if (!email) newErrors.email = 'E-mail obrigatório'
-    if (!password) newErrors.password = 'Senha obrigatória'
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email) newErrors.email = 'E-mail obrigatório';
+    if (!password) newErrors.password = 'Senha obrigatória';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setApiError('')
-    if (!validate()) return
-    if (loading) return
+    e.preventDefault();
+    setApiError('');
+    if (!validate()) return;
+    if (loading) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const response = await login({ email, password })
-      const { token, role, planActive } = response.data
-
-      if (role !== 'ADMIN') {
-        setApiError('Acesso restrito ao painel administrativo.')
-        return
-      }
-
-      storage.setToken(token)
-      storage.setRole(role)
-      storage.setPlanActive(planActive)
-      navigate('/admin/dashboard')
+      await login(email, password);
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Não foi possível realizar login. Tente novamente.')
+      setApiError(
+        err instanceof Error ? err.message : 'Não foi possível realizar login. Tente novamente.'
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -70,7 +59,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="text-gray-400 hover:text-gray-600"
+            className="flex h-5 w-5 items-center justify-center text-gray-400 hover:text-gray-600"
           >
             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
           </button>
@@ -81,9 +70,7 @@ export function LoginForm() {
         Esqueceu a senha?
       </button>
 
-      {apiError && (
-        <span className="text-center text-sm text-red-500">{apiError}</span>
-      )}
+      {apiError && <span className="text-center text-sm text-red-500">{apiError}</span>}
 
       <button
         type="submit"
@@ -93,5 +80,5 @@ export function LoginForm() {
         {loading ? 'Entrando...' : 'Entrar'}
       </button>
     </form>
-  )
+  );
 }

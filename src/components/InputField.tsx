@@ -1,11 +1,11 @@
 interface InputFieldProps {
-  label: string
-  type: string
-  placeholder?: string
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  error?: string
-  rightElement?: React.ReactNode
+  label: string;
+  type: string;
+  placeholder?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+  rightElement?: React.ReactNode;
 }
 
 export function InputField({
@@ -19,9 +19,7 @@ export function InputField({
 }: InputFieldProps) {
   return (
     <div className="flex flex-col gap-1">
-    <label className="text-sm font-bold text-black">
-    {label}
-    </label>
+      <label className="text-sm font-bold text-black">{label}</label>
       <div className="relative">
         <input
           type={type}
@@ -38,5 +36,5 @@ export function InputField({
       </div>
       {error && <span className="text-xs text-red-500">{error}</span>}
     </div>
-  )
+  );
 }
