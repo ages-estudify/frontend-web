@@ -1,34 +1,34 @@
-import { BookText, Home, Import, Route, SignalHigh, Users } from "lucide-react"
+import { BookText, Home, Import, Route, SignalHigh, Users } from 'lucide-react';
 
 export const navItems = [
   {
-    title: "Questões",
-    url: "/",
+    title: 'Questões',
+    url: '/',
     icon: Home,
   },
   {
-    title: "Trilha",
-    url: "/trilha",
+    title: 'Trilha',
+    url: '/trilha',
     icon: Route,
   },
   {
-    title: "Simulados",
-    url: "/simulados",
+    title: 'Simulados',
+    url: '/simulados',
     icon: BookText,
   },
   {
-    title: "Importar CSV",
-    url: "/importarCSV",
+    title: 'Importar CSV',
+    url: '/importarCSV',
     icon: Import,
   },
   {
-    title: "Usuários",
-    url: "/usuarios",
+    title: 'Usuários',
+    url: '/usuarios',
     icon: Users,
   },
   {
-    title: "Dashboard",
-    url: "/dashboard",
+    title: 'Dashboard',
+    url: '/dashboard',
     icon: SignalHigh,
   },
-]
+];

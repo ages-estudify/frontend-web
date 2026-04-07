@@ -6,12 +6,12 @@ import type {
   RegisterResponse,
 } from '@/types/auth.types';
 
-export const login = async (body: LoginRequest): Promise<LoginResponse> => {
-  const response: LoginResponse = await api.post('/auth/login', body);
-  return response;
+export const login = async (payload: LoginRequest): Promise<LoginResponse> => {
+  const response = await api.post('/auth/login', payload);
+  return response.data;
 };
 
 export const register = async (body: RegisterRequest): Promise<RegisterResponse> => {
-  const response: RegisterResponse = await api.post('/auth/register', body);
-  return response;
+  const response = await api.post('/auth/register', body);
+  return response.data;
 };
