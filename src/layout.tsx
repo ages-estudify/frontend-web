@@ -1,23 +1,16 @@
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './components/app-sidebar';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from './components/ui/sidebar';
 
 export default function Layout() {
   return (
-    <SidebarProvider>
-      <AppSidebar />
+    <div className="min-h-screen bg-background">
+      <aside className="fixed left-0 top-0 h-screen w-[200px] border-r bg-white">
+        <AppSidebar />
+      </aside>
 
-      <SidebarInset>
-        <main className="min-h-screen">
-          <div className="p-4">
-            <SidebarTrigger />
-          </div>
-
-          <div className="p-4">
-            <Outlet />
-          </div>
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+      <main className="ml-[200px] min-h-screen p-6">
+        <Outlet />
+      </main>
+    </div>
   );
 }
