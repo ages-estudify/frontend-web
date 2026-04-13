@@ -2,15 +2,50 @@ import { useState } from 'react';
 import { FileSpreadsheet, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { importQuestions } from '@/services/question.service';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import type { ImportQuestionsResponse } from '@/types/question.types';
+
+type ImportQuestionsSheetProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImport: (file: File) => Promise<ImportQuestionsResponse>;
+  onImportSuccess?: () => Promise<void> | void;
+};
 
 const acceptedFileTypes = '.csv,.xlsx,.xls';
 
-export function ImportCSVPage() {
+export function ImportQuestionsSheet({
+  open,
+  onOpenChange,
+  onImport,
+  onImportSuccess,
+}: ImportQuestionsSheetProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  const resetState = () => {
+    setSelectedFile(null);
+    setIsSubmitting(false);
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
+  const handleClose = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      resetState();
+    }
+
+    onOpenChange(nextOpen);
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -41,7 +76,7 @@ export function ImportCSVPage() {
     setSuccessMessage('');
   };
 
-  const handleImport = async () => {
+  const handleSubmit = async () => {
     if (!selectedFile) {
       setErrorMessage('Selecione um arquivo antes de importar.');
       return;
@@ -52,9 +87,13 @@ export function ImportCSVPage() {
       setErrorMessage('');
       setSuccessMessage('');
 
-      const response = await importQuestions(selectedFile);
+      const response = await onImport(selectedFile);
+
       setSuccessMessage(response.message || 'Importação realizada com sucesso.');
-      setSelectedFile(null);
+
+      if (onImportSuccess) {
+        await onImportSuccess();
+      }
     } catch (error) {
       console.error('Erro ao importar questões:', error);
       setErrorMessage('Não foi possível importar o arquivo.');
@@ -64,17 +103,17 @@ export function ImportCSVPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-bold text-foreground">Importar CSV</h1>
-        <p className="text-sm text-muted-foreground">
-          Envie um arquivo CSV ou Excel para importar questões em lote.
-        </p>
-      </header>
+    <Sheet open={open} onOpenChange={handleClose}>
+      <SheetContent side="center" className="max-w-2xl p-0">
+        <SheetHeader className="border-b px-6 py-5">
+          <SheetTitle>Importar questões</SheetTitle>
+          <SheetDescription>
+            Envie um arquivo CSV ou Excel para importar questões em lote.
+          </SheetDescription>
+        </SheetHeader>
 
-      <section className="rounded-2xl border bg-background p-6 shadow-sm">
-        <div className="flex flex-col gap-5">
-          <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8">
+        <div className="flex flex-col gap-5 px-6 py-6">
+          <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-6">
             <label
               htmlFor="questions-import-file"
               className="flex cursor-pointer flex-col items-center justify-center gap-3 text-center"
@@ -132,18 +171,18 @@ export function ImportCSVPage() {
               {successMessage}
             </div>
           ) : null}
-
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={handleRemoveFile}>
-              Limpar
-            </Button>
-
-            <Button type="button" onClick={handleImport} disabled={isSubmitting}>
-              {isSubmitting ? 'Importando...' : 'Importar arquivo'}
-            </Button>
-          </div>
         </div>
-      </section>
-    </div>
+
+        <SheetFooter className="border-t px-6 py-4 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => handleClose(false)}>
+            Cancelar
+          </Button>
+
+          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Importando...' : 'Importar arquivo'}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Trash2, Upload } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 
 import { QuestionFormSheet } from '@/components/questions/QuestionFormSheet';
 import { initialQuestionFormState } from '@/components/questions/question-form.constants';
@@ -178,17 +178,10 @@ export function QuestionsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="outline" type="button">
-              <Upload />
-              Importar CSV
-            </Button>
-
-            <Button type="button" onClick={handleOpenCreateSheet}>
-              <Plus />
-              Nova questão
-            </Button>
-          </div>
+          <Button type="button" onClick={handleOpenCreateSheet}>
+            <Plus />
+            Nova questão
+          </Button>
         </header>
 
         <section className="rounded-xl border bg-background p-4 shadow-sm">
