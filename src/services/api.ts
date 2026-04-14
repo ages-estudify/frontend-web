@@ -18,7 +18,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-api.interceptors.response.use((response) => response.data);
+api.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    if (axios.isAxiosError(error)) {
+      return Promise.reject(error.response?.data ?? error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const handleApiError = (error: unknown): never => {
   if (axios.isAxiosError(error)) {
