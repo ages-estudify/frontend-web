@@ -6,6 +6,22 @@ import { importQuestions } from '@/services/question.service';
 
 const acceptedFileTypes = '.csv,.xlsx,.xls';
 
+const csvExampleHeaders = [
+  'discipline',
+  'content',
+  'question',
+  'alternative_a',
+  'alternative_b',
+  'alternative_c',
+  'alternative_d',
+  'alternative_e',
+  'correct_answer',
+  'answer_explanation',
+  'bank',
+  'year',
+  'mock_exam_id',
+];
+
 export function ImportCSVPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,8 +68,8 @@ export function ImportCSVPage() {
       setErrorMessage('');
       setSuccessMessage('');
 
-      const response = await importQuestions(selectedFile);
-      setSuccessMessage(response.message || 'Importação realizada com sucesso.');
+      await importQuestions(selectedFile);
+      setSuccessMessage('Importação realizada com sucesso.');
       setSelectedFile(null);
     } catch (error) {
       console.error('Erro ao importar questões:', error);
@@ -120,6 +136,24 @@ export function ImportCSVPage() {
               </Button>
             </div>
           ) : null}
+
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <p className="mb-2 text-sm font-medium text-foreground">Estrutura esperada do CSV</p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              O arquivo deve conter as colunas abaixo na primeira linha.
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {csvExampleHeaders.map((header) => (
+                <span
+                  key={header}
+                  className="rounded-md border bg-background px-2 py-1 text-xs text-foreground"
+                >
+                  {header}
+                </span>
+              ))}
+            </div>
+          </div>
 
           {errorMessage ? (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">

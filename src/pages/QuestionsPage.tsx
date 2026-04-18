@@ -8,16 +8,19 @@ import { Input } from '@/components/ui/input';
 import {
   createQuestion,
   deleteQuestion,
+  getQuestionExams,
+  getQuestionPaths,
   getQuestions,
-  getQuestionsByMockExamId,
   updateQuestion,
 } from '@/services/question.service';
 import type {
   CreateQuestionPayload,
   Question,
+  QuestionExam,
   QuestionFormData,
+  QuestionOrigin,
+  QuestionPath,
   QuestionsFilters,
-  QuestionType,
   UpdateQuestionPayload,
 } from '@/types/question.types';
 
@@ -25,7 +28,11 @@ const PAGE_SIZE = 20;
 
 export function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [paths, setPaths] = useState<QuestionPath[]>([]);
+  const [exams, setExams] = useState<QuestionExam[]>([]);
+
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFilters, setIsLoadingFilters] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [isFormSheetOpen, setIsFormSheetOpen] = useState(false);
@@ -33,42 +40,49 @@ export function QuestionsPage() {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [formData, setFormData] = useState<QuestionFormData>(initialQuestionFormState);
 
-  const [discipline, setDiscipline] = useState('');
-  const [content, setContent] = useState('');
-  const [type, setType] = useState<QuestionType | ''>('');
+  const [pathId, setPathId] = useState('');
+  const [examId, setExamId] = useState('');
+  const [origin, setOrigin] = useState<QuestionOrigin | ''>('');
   const [year, setYear] = useState('');
-  const [mockExamId, setMockExamId] = useState('');
 
   const filters = useMemo<QuestionsFilters>(
     () => ({
-      discipline: discipline || undefined,
-      content: content || undefined,
-      type: type || undefined,
+      path_id: pathId || undefined,
+      exam_id: examId || undefined,
+      origin: origin || undefined,
       year: year ? Number(year) : undefined,
-      mockExamId: mockExamId || undefined,
       page: 0,
       size: PAGE_SIZE,
     }),
-    [discipline, content, type, year, mockExamId]
+    [pathId, examId, origin, year]
   );
+
+  const loadFilterOptions = async () => {
+    try {
+      setIsLoadingFilters(true);
+
+      const [pathsResponse, examsResponse] = await Promise.all([
+        getQuestionPaths(),
+        getQuestionExams(),
+      ]);
+
+      setPaths(pathsResponse);
+      setExams(examsResponse);
+    } catch (error) {
+      console.error('Erro ao carregar filtros:', error);
+    } finally {
+      setIsLoadingFilters(false);
+    }
+  };
 
   const loadQuestions = async () => {
     try {
       setIsLoading(true);
 
-      const response = mockExamId
-        ? await getQuestionsByMockExamId(mockExamId, {
-            discipline: discipline || undefined,
-            content: content || undefined,
-            type: type || undefined,
-            year: year ? Number(year) : undefined,
-            page: 0,
-            size: PAGE_SIZE,
-          })
-        : await getQuestions(filters);
-
-      const activeQuestions = response.content.filter((question) => question.enable);
-      setQuestions(activeQuestions);
+      const response = await getQuestions(filters);
+      const enabledQuestions = response.content.filter((question) => question.enable);
+      console.log('questions response', response.content);
+      setQuestions(enabledQuestions);
     } catch (error) {
       console.error('Erro ao carregar questões:', error);
     } finally {
@@ -77,6 +91,7 @@ export function QuestionsPage() {
   };
 
   useEffect(() => {
+    loadFilterOptions();
     loadQuestions();
   }, []);
 
@@ -85,11 +100,10 @@ export function QuestionsPage() {
   };
 
   const handleClearFilters = async () => {
-    setDiscipline('');
-    setContent('');
-    setType('');
+    setPathId('');
+    setExamId('');
+    setOrigin('');
     setYear('');
-    setMockExamId('');
 
     try {
       setIsLoading(true);
@@ -98,8 +112,8 @@ export function QuestionsPage() {
         size: PAGE_SIZE,
       });
 
-      const activeQuestions = response.content.filter((question) => question.enable);
-      setQuestions(activeQuestions);
+      const enabledQuestions = response.content.filter((question) => question.enable);
+      setQuestions(enabledQuestions);
     } catch (error) {
       console.error('Erro ao limpar filtros:', error);
     } finally {
@@ -115,22 +129,29 @@ export function QuestionsPage() {
   };
 
   const handleOpenEditSheet = (question: Question) => {
+    const correctAlternative =
+      question.alternatives?.find((alternative) => alternative.is_correct)?.letter ?? 'A';
+
     setFormMode('edit');
     setSelectedQuestion(question);
     setFormData({
-      discipline: question.discipline,
-      content: question.content,
-      question: question.question,
-      alternativeA: question.alternatives.A,
-      alternativeB: question.alternatives.B,
-      alternativeC: question.alternatives.C,
-      alternativeD: question.alternatives.D,
-      alternativeE: question.alternatives.E,
-      correctAnswer: question.correctAnswer,
-      answerExplanation: question.answerExplanation,
-      type: question.type,
+      path_id: question.path_id,
+      exam_id: question.exam_id ?? '',
+      text: question.text,
+      feedback: question.feedback ?? '',
+      image: question.image ?? '',
+      number: question.number !== null ? String(question.number) : '',
       year: String(question.year),
-      mockExamId: question.mockExamId ?? '',
+      day: question.day !== null ? String(question.day) : '',
+      language: question.language ?? '',
+      origin: question.origin,
+      enable: question.enable,
+      alternativeA: question.alternatives?.find((item) => item.letter === 'A')?.text ?? '',
+      alternativeB: question.alternatives?.find((item) => item.letter === 'B')?.text ?? '',
+      alternativeC: question.alternatives?.find((item) => item.letter === 'C')?.text ?? '',
+      alternativeD: question.alternatives?.find((item) => item.letter === 'D')?.text ?? '',
+      alternativeE: question.alternatives?.find((item) => item.letter === 'E')?.text ?? '',
+      correctAlternative,
     });
     setIsFormSheetOpen(true);
   };
@@ -144,6 +165,11 @@ export function QuestionsPage() {
     } catch (error) {
       console.error('Erro ao excluir questão:', error);
     }
+  };
+
+  const getSubjectNameByPathId = (pathId: string) => {
+    const selectedPath = paths.find((path) => path.id === pathId);
+    return selectedPath?.subject?.name ?? '-';
   };
 
   const handleSubmitForm = async (payload: CreateQuestionPayload | UpdateQuestionPayload) => {
@@ -185,39 +211,54 @@ export function QuestionsPage() {
         </header>
 
         <section className="rounded-xl border bg-background p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <Input
-              placeholder="Filtrar por disciplina"
-              value={discipline}
-              onChange={(event) => setDiscipline(event.target.value)}
-            />
-
-            <Input
-              placeholder="Filtrar por conteúdo"
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-            />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <select
+              value={pathId}
+              onChange={(event) => setPathId(event.target.value)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none"
+              disabled={isLoadingFilters}
+            >
+              <option value="">
+                {isLoadingFilters ? 'Carregando trilhas...' : 'Filtrar por trilha'}
+              </option>
+              {paths.map((path) => (
+                <option key={path.id} value={path.id}>
+                  {path.subject.name} - {path.name}
+                </option>
+              ))}
+            </select>
 
             <select
-              value={type}
-              onChange={(event) => setType(event.target.value as QuestionType | '')}
+              value={examId}
+              onChange={(event) => setExamId(event.target.value)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none"
+              disabled={isLoadingFilters}
+            >
+              <option value="">
+                {isLoadingFilters ? 'Carregando simulados...' : 'Filtrar por simulado'}
+              </option>
+              {exams.map((exam) => (
+                <option key={exam.id} value={exam.id}>
+                  {exam.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={origin}
+              onChange={(event) => setOrigin(event.target.value as QuestionOrigin | '')}
               className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none"
             >
-              <option value="">Todos os tipos</option>
-              <option value="Simplified">Simplified</option>
-              <option value="Original">Original</option>
+              <option value="">Filtrar por origem</option>
+              <option value="ORIGINAL">ORIGINAL</option>
+              <option value="ENGLISH">ENGLISH</option>
+              <option value="SPANISH">SPANISH</option>
             </select>
 
             <Input
               placeholder="Filtrar por ano"
               value={year}
               onChange={(event) => setYear(event.target.value)}
-            />
-
-            <Input
-              placeholder="Filtrar por simulado"
-              value={mockExamId}
-              onChange={(event) => setMockExamId(event.target.value)}
             />
           </div>
 
@@ -235,15 +276,16 @@ export function QuestionsPage() {
 
         <section className="overflow-hidden rounded-xl border bg-background shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] border-collapse">
+            <table className="w-full min-w-[1200px] border-collapse">
               <thead>
                 <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-4 py-3 text-sm font-medium">Disciplina</th>
-                  <th className="px-4 py-3 text-sm font-medium">Conteúdo</th>
+                  <th className="px-4 py-3 text-sm font-medium">Matéria</th>
+                  <th className="px-4 py-3 text-sm font-medium">Trilha</th>
                   <th className="px-4 py-3 text-sm font-medium">Questão</th>
-                  <th className="px-4 py-3 text-sm font-medium">Tipo</th>
+                  <th className="px-4 py-3 text-sm font-medium">Origem</th>
                   <th className="px-4 py-3 text-sm font-medium">Ano</th>
                   <th className="px-4 py-3 text-sm font-medium">Simulado</th>
+                  <th className="px-4 py-3 text-sm font-medium">Status</th>
                   <th className="px-4 py-3 text-right text-sm font-medium">Ações</th>
                 </tr>
               </thead>
@@ -252,7 +294,7 @@ export function QuestionsPage() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="px-4 py-10 text-center text-sm text-muted-foreground"
                     >
                       Carregando questões...
@@ -261,7 +303,7 @@ export function QuestionsPage() {
                 ) : questions.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="px-4 py-10 text-center text-sm text-muted-foreground"
                     >
                       Nenhuma questão encontrada.
@@ -270,14 +312,15 @@ export function QuestionsPage() {
                 ) : (
                   questions.map((question) => (
                     <tr key={question.id} className="border-b last:border-b-0">
-                      <td className="px-4 py-3 text-sm">{question.discipline}</td>
-                      <td className="px-4 py-3 text-sm">{question.content}</td>
-                      <td className="max-w-[420px] px-4 py-3 text-sm">{question.question}</td>
-                      <td className="px-4 py-3 text-sm">{question.type}</td>
-                      <td className="px-4 py-3 text-sm">{question.year}</td>
                       <td className="px-4 py-3 text-sm">
-                        {question.mockExamId ? question.mockExamId : 'Banco geral'}
+                        {getSubjectNameByPathId(question.path_id)}
                       </td>
+                      <td className="px-4 py-3 text-sm">{question.path?.name ?? '-'}</td>
+                      <td className="max-w-[420px] px-4 py-3 text-sm">{question.text}</td>
+                      <td className="px-4 py-3 text-sm">{question.origin}</td>
+                      <td className="px-4 py-3 text-sm">{question.year}</td>
+                      <td className="px-4 py-3 text-sm">{question.exam?.name ?? 'Banco geral'}</td>
+                      <td className="px-4 py-3 text-sm">{question.enable ? 'Ativa' : 'Inativa'}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">
                           <Button

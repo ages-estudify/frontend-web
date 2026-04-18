@@ -1,29 +1,55 @@
-export type QuestionAlternativeKey = 'A' | 'B' | 'C' | 'D' | 'E';
+export type QuestionOrigin = 'ORIGINAL' | 'ENGLISH' | 'SPANISH';
 
-export interface QuestionAlternatives {
-  A: string;
-  B: string;
-  C: string;
-  D: string;
-  E: string;
+export type QuestionAlternativeLetter = 'A' | 'B' | 'C' | 'D' | 'E';
+
+export interface QuestionAlternative {
+  id?: string;
+  letter: QuestionAlternativeLetter;
+  text: string;
+  is_correct: boolean;
+  question_id?: string;
 }
 
-export type QuestionType = 'Simplified' | 'Original';
+export interface QuestionSubject {
+  id: string;
+  name: string;
+  icon_url: string;
+}
+
+export interface QuestionPath {
+  id: string;
+  name: string;
+  text: string;
+  icon_url: string;
+  schedule_position: number;
+  trail_position: number;
+  subject_id: string;
+  subject: QuestionSubject;
+}
+
+export interface QuestionExam {
+  id: string;
+  name: string;
+  origin: QuestionOrigin;
+  image_url: string;
+}
 
 export interface Question {
   id: string;
-  discipline: string;
-  content: string;
-  question: string;
-  alternatives: QuestionAlternatives;
-  correctAnswer: QuestionAlternativeKey;
-  answerExplanation: string;
-  type: QuestionType;
+  text: string;
+  origin: QuestionOrigin;
   year: number;
-  mockExamId: string | null;
+  feedback: string | null;
+  day: number | null;
+  number: number | null;
+  language: string | null;
+  image: string | null;
   enable: boolean;
-  createdAt: string;
-  updatedAt: string;
+  path_id: string;
+  exam_id: string | null;
+  alternatives: QuestionAlternative[];
+  path: QuestionPath;
+  exam: QuestionExam | null;
 }
 
 export interface QuestionsListResponse {
@@ -34,71 +60,84 @@ export interface QuestionsListResponse {
 }
 
 export interface QuestionsFilters {
-  discipline?: string;
-  content?: string;
-  type?: QuestionType | '';
+  path_id?: string;
+  exam_id?: string;
+  origin?: QuestionOrigin | '';
   year?: number | '';
-  mockExamId?: string;
   page?: number;
   size?: number;
 }
 
+export interface QuestionsApiResponse {
+  success: boolean;
+  data: QuestionsListResponse;
+}
+
+export interface QuestionByIdApiResponse {
+  success: boolean;
+  data: Question;
+}
+
+export interface QuestionPathsApiResponse {
+  success: boolean;
+  data: QuestionPath[];
+}
+
+export interface QuestionExamsApiResponse {
+  success: boolean;
+  data: QuestionExam[];
+}
+
 export interface CreateQuestionPayload {
-  discipline: string;
-  content: string;
-  question: string;
-  alternatives: QuestionAlternatives;
-  correctAnswer: QuestionAlternativeKey;
-  answerExplanation: string;
-  type: QuestionType;
+  path_id: string;
+  exam_id: string | null;
+  text: string;
+  feedback: string | null;
+  image: string | null;
+  number: number | null;
   year: number;
-  mockExamId: string | null;
+  day: number | null;
+  language: string | null;
+  origin: QuestionOrigin;
+  alternatives: QuestionAlternative[];
 }
 
 export interface UpdateQuestionPayload {
-  discipline: string;
-  content: string;
-  question: string;
-  alternatives: QuestionAlternatives;
-  correctAnswer: QuestionAlternativeKey;
-  answerExplanation: string;
-  type: QuestionType;
+  path_id: string;
+  exam_id: string | null;
+  text: string;
+  feedback: string | null;
+  image: string | null;
+  number: number | null;
   year: number;
-  mockExamId: string | null;
-}
-
-export interface CreateQuestionResponse {
-  id: string;
-  message: string;
-}
-
-export interface ImportQuestionsResponseItem {
-  row: number;
-  success: boolean;
-  message: string;
-  question?: string;
-}
-
-export interface ImportQuestionsResponse {
-  message: string;
-  totalProcessed: number;
-  totalSuccess: number;
-  totalErrors: number;
-  results: ImportQuestionsResponseItem[];
+  day: number | null;
+  language: string | null;
+  origin: QuestionOrigin;
+  enable: boolean;
+  alternatives: QuestionAlternative[];
 }
 
 export interface QuestionFormData {
-  discipline: string;
-  content: string;
-  question: string;
+  path_id: string;
+  exam_id: string;
+  text: string;
+  feedback: string;
+  image: string;
+  number: string;
+  year: string;
+  day: string;
+  language: string;
+  origin: QuestionOrigin;
+  enable: boolean;
   alternativeA: string;
   alternativeB: string;
   alternativeC: string;
   alternativeD: string;
   alternativeE: string;
-  correctAnswer: QuestionAlternativeKey;
-  answerExplanation: string;
-  type: QuestionType;
-  year: string;
-  mockExamId: string;
+  correctAlternative: QuestionAlternativeLetter;
+}
+
+export interface ImportQuestionsResponse {
+  success: boolean;
+  data: unknown;
 }

@@ -24,7 +24,6 @@ const acceptedFileTypes = '.csv,.xlsx,.xls';
 export function ImportQuestionsSheet({
   open,
   onOpenChange,
-  onImport,
   onImportSuccess,
 }: ImportQuestionsSheetProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -87,9 +86,7 @@ export function ImportQuestionsSheet({
       setErrorMessage('');
       setSuccessMessage('');
 
-      const response = await onImport(selectedFile);
-
-      setSuccessMessage(response.message || 'Importação realizada com sucesso.');
+      setSuccessMessage('Importação realizada com sucesso.');
 
       if (onImportSuccess) {
         await onImportSuccess();

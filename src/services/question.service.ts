@@ -1,8 +1,13 @@
 import api, { handleApiError } from './api';
 import type {
   CreateQuestionPayload,
-  CreateQuestionResponse,
   ImportQuestionsResponse,
+  QuestionByIdApiResponse,
+  QuestionExam,
+  QuestionExamsApiResponse,
+  QuestionPath,
+  QuestionPathsApiResponse,
+  QuestionsApiResponse,
   QuestionsFilters,
   QuestionsListResponse,
   UpdateQuestionPayload,
@@ -14,11 +19,10 @@ const buildQuestionsParams = (filters?: QuestionsFilters) => {
   if (!filters) return {};
 
   return {
-    discipline: filters.discipline || undefined,
-    content: filters.content || undefined,
-    type: filters.type || undefined,
+    path_id: filters.path_id || undefined,
+    exam_id: filters.exam_id || undefined,
+    origin: filters.origin || undefined,
     year: filters.year || undefined,
-    mockExamId: filters.mockExamId || undefined,
     page: filters.page ?? 0,
     size: filters.size ?? 20,
   };
@@ -26,35 +30,46 @@ const buildQuestionsParams = (filters?: QuestionsFilters) => {
 
 export const getQuestions = async (filters?: QuestionsFilters): Promise<QuestionsListResponse> => {
   try {
-    return await api.get(QUESTIONS_BASE_PATH, {
+    const response = (await api.get(QUESTIONS_BASE_PATH, {
       params: buildQuestionsParams(filters),
-    });
+    })) as QuestionsApiResponse;
+
+    return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-export const getQuestionsByMockExamId = async (
-  mockExamId: string,
-  filters?: Omit<QuestionsFilters, 'mockExamId'>
-): Promise<QuestionsListResponse> => {
+export const getQuestionById = async (id: string) => {
   try {
-    return await api.get(QUESTIONS_BASE_PATH, {
-      params: buildQuestionsParams({
-        ...filters,
-        mockExamId,
-      }),
-    });
+    const response = await api.get<QuestionByIdApiResponse>(`${QUESTIONS_BASE_PATH}/${id}`);
+    return response.data;
   } catch (error) {
     return handleApiError(error);
   }
 };
 
-export const createQuestion = async (
-  payload: CreateQuestionPayload
-): Promise<CreateQuestionResponse> => {
+export const getQuestionPaths = async (): Promise<QuestionPath[]> => {
   try {
-    return await api.post(QUESTIONS_BASE_PATH, payload);
+    const response = (await api.get(`${QUESTIONS_BASE_PATH}/paths`)) as QuestionPathsApiResponse;
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const getQuestionExams = async (): Promise<QuestionExam[]> => {
+  try {
+    const response = (await api.get(`${QUESTIONS_BASE_PATH}/exams`)) as QuestionExamsApiResponse;
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const createQuestion = async (payload: CreateQuestionPayload): Promise<void> => {
+  try {
+    await api.post(QUESTIONS_BASE_PATH, payload);
   } catch (error) {
     return handleApiError(error);
   }
