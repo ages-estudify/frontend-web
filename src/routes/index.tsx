@@ -1,11 +1,11 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { LoginPage } from '../pages/LoginPage';
-import { QuestionsPage } from '../pages/QuestionsPage';
+import { QuestionsPage } from '../pages/Questions';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import Layout from '../layout';
 import { TrackPage } from '../pages/TestPage';
 import { ExamsPage } from '../pages/ExamsPage';
-import { ImportCSVPage } from '../pages/ImportCSVPage';
+import { ImportCSVPage } from '../pages/ImportCSV';
 import { UsersPage } from '../pages/UsersPage';
 import { DashboardPage } from '../pages/DashboardPage';
 
