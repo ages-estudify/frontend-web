@@ -1,4 +1,4 @@
-export type QuestionOrigin = 'ORIGINAL' | 'ENGLISH' | 'SPANISH';
+export type QuestionOrigin = 'ORIGINAL' | 'EXTERNAL';
 
 export type QuestionAlternativeLetter = 'A' | 'B' | 'C' | 'D' | 'E';
 

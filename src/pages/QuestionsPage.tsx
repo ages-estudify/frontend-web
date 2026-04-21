@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image as ImageIcon, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 
 import { QuestionFormSheet } from '@/components/questions/QuestionFormSheet';
 import { initialQuestionFormState } from '@/components/questions/question-form.constants';
@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import {
   createQuestion,
   deleteQuestion,
-  getQuestionExams,
   getQuestionPaths,
   getQuestions,
   updateQuestion,
@@ -16,23 +15,20 @@ import {
 import type {
   CreateQuestionPayload,
   Question,
-  QuestionExam,
   QuestionFormData,
-  QuestionOrigin,
   QuestionPath,
-  QuestionsFilters,
   UpdateQuestionPayload,
 } from '@/types/question.types';
 
-const PAGE_SIZE = 20;
+const BACKEND_PAGE_SIZE = 100;
+const UI_PAGE_SIZE = 20;
 
 export function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [paths, setPaths] = useState<QuestionPath[]>([]);
-  const [exams, setExams] = useState<QuestionExam[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingFilters, setIsLoadingFilters] = useState(false);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [isFormSheetOpen, setIsFormSheetOpen] = useState(false);
@@ -40,48 +36,55 @@ export function QuestionsPage() {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [formData, setFormData] = useState<QuestionFormData>(initialQuestionFormState);
 
-  const [pathId, setPathId] = useState('');
-  const [examId, setExamId] = useState('');
-  const [origin, setOrigin] = useState<QuestionOrigin | ''>('');
-  const [year, setYear] = useState('');
+  const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filters = useMemo<QuestionsFilters>(
-    () => ({
-      path_id: pathId || undefined,
-      exam_id: examId || undefined,
-      origin: origin || undefined,
-      year: year ? Number(year) : undefined,
-      page: 0,
-      size: PAGE_SIZE,
-    }),
-    [pathId, examId, origin, year]
-  );
-
-  const loadFilterOptions = async () => {
+  const loadOptions = async () => {
     try {
-      setIsLoadingFilters(true);
+      setIsLoadingOptions(true);
 
-      const [pathsResponse, examsResponse] = await Promise.all([
-        getQuestionPaths(),
-        getQuestionExams(),
-      ]);
+      const pathsResponse = await getQuestionPaths();
 
       setPaths(pathsResponse);
-      setExams(examsResponse);
     } catch (error) {
-      console.error('Erro ao carregar filtros:', error);
+      console.error('Erro ao carregar opções da página:', error);
     } finally {
-      setIsLoadingFilters(false);
+      setIsLoadingOptions(false);
     }
   };
 
-  const loadQuestions = async () => {
+  const loadAllQuestions = async () => {
     try {
       setIsLoading(true);
 
-      const response = await getQuestions(filters);
-      const enabledQuestions = response.content.filter((question) => question.enable);
-      console.log('questions response', response.content);
+      const firstResponse = await getQuestions({
+        page: 0,
+        size: BACKEND_PAGE_SIZE,
+      });
+
+      const total = firstResponse.totalElements;
+      const totalBackendPages = Math.ceil(total / BACKEND_PAGE_SIZE);
+
+      let allQuestions = [...firstResponse.content];
+
+      if (totalBackendPages > 1) {
+        const remainingRequests = Array.from({ length: totalBackendPages - 1 }, (_, index) =>
+          getQuestions({
+            page: index + 1,
+            size: BACKEND_PAGE_SIZE,
+          })
+        );
+
+        const remainingResponses = await Promise.all(remainingRequests);
+
+        remainingResponses.forEach((response) => {
+          allQuestions = allQuestions.concat(response.content);
+        });
+      }
+
+      const enabledQuestions = allQuestions.filter((question) => question.enable);
+
       setQuestions(enabledQuestions);
     } catch (error) {
       console.error('Erro ao carregar questões:', error);
@@ -91,35 +94,73 @@ export function QuestionsPage() {
   };
 
   useEffect(() => {
-    loadFilterOptions();
-    loadQuestions();
+    loadOptions();
+    loadAllQuestions();
   }, []);
 
-  const handleSearch = async () => {
-    await loadQuestions();
-  };
+  const getSubjectNameByPathId = useCallback(
+    (pathId: string) => {
+      const selectedPath = paths.find((path) => path.id === pathId);
+      return selectedPath?.subject?.name ?? '-';
+    },
+    [paths]
+  );
 
-  const handleClearFilters = async () => {
-    setPathId('');
-    setExamId('');
-    setOrigin('');
-    setYear('');
-
-    try {
-      setIsLoading(true);
-      const response = await getQuestions({
-        page: 0,
-        size: PAGE_SIZE,
-      });
-
-      const enabledQuestions = response.content.filter((question) => question.enable);
-      setQuestions(enabledQuestions);
-    } catch (error) {
-      console.error('Erro ao limpar filtros:', error);
-    } finally {
-      setIsLoading(false);
+  const getQuestionOrder = (question: Question) => {
+    if (question.number !== null && question.number !== undefined) {
+      return question.number;
     }
+
+    return question.path?.trail_position ?? '-';
   };
+
+  const categoryOptions = useMemo(() => {
+    const categories = paths.map((path) => path.subject.name);
+    return Array.from(new Set(categories)).sort((a, b) => a.localeCompare(b));
+  }, [paths]);
+
+  const filteredQuestions = useMemo(() => {
+    return questions.filter((question) => {
+      const subjectName = getSubjectNameByPathId(question.path_id);
+      const searchValue = search.trim().toLowerCase();
+
+      const matchesSearch =
+        !searchValue ||
+        question.text.toLowerCase().includes(searchValue) ||
+        question.path?.name?.toLowerCase().includes(searchValue) ||
+        subjectName.toLowerCase().includes(searchValue);
+
+      const matchesCategory = !selectedCategory || subjectName === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [questions, search, selectedCategory, getSubjectNameByPathId]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredQuestions.length / UI_PAGE_SIZE));
+
+  const paginatedQuestions = useMemo(() => {
+    const startIndex = (currentPage - 1) * UI_PAGE_SIZE;
+    const endIndex = startIndex + UI_PAGE_SIZE;
+
+    return filteredQuestions.slice(startIndex, endIndex);
+  }, [filteredQuestions, currentPage]);
+
+  const paginationLabel = useMemo(() => {
+    if (filteredQuestions.length === 0) {
+      return 'Mostrando questão 0–0 de 0';
+    }
+
+    const start = (currentPage - 1) * UI_PAGE_SIZE + 1;
+    const end = Math.min(currentPage * UI_PAGE_SIZE, filteredQuestions.length);
+
+    return `Mostrando questão ${start.toLocaleString('pt-BR')}–${end.toLocaleString(
+      'pt-BR'
+    )} de ${filteredQuestions.length.toLocaleString('pt-BR')}`;
+  }, [currentPage, filteredQuestions.length]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategory]);
 
   const handleOpenCreateSheet = () => {
     setFormMode('create');
@@ -157,19 +198,16 @@ export function QuestionsPage() {
   };
 
   const handleDeleteQuestion = async (id: string) => {
+    const confirmed = window.confirm('Deseja realmente excluir essa questão?');
+
+    if (!confirmed) return;
+
     try {
       await deleteQuestion(id);
-      setQuestions((previousQuestions) =>
-        previousQuestions.filter((question) => question.id !== id)
-      );
+      await loadAllQuestions();
     } catch (error) {
       console.error('Erro ao excluir questão:', error);
     }
-  };
-
-  const getSubjectNameByPathId = (pathId: string) => {
-    const selectedPath = paths.find((path) => path.id === pathId);
-    return selectedPath?.subject?.name ?? '-';
   };
 
   const handleSubmitForm = async (payload: CreateQuestionPayload | UpdateQuestionPayload) => {
@@ -185,7 +223,8 @@ export function QuestionsPage() {
       setIsFormSheetOpen(false);
       setSelectedQuestion(null);
       setFormData(initialQuestionFormState);
-      await loadQuestions();
+      await loadAllQuestions();
+      setCurrentPage(1);
     } catch (error) {
       console.error('Erro ao salvar questão:', error);
     } finally {
@@ -196,149 +235,154 @@ export function QuestionsPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Questões</h1>
-            <p className="text-sm text-muted-foreground">
-              Gerencie as questões da base educacional da plataforma.
-            </p>
-          </div>
-
-          <Button type="button" onClick={handleOpenCreateSheet}>
-            <Plus />
-            Nova questão
-          </Button>
+        <header>
+          <h1 className="text-[52px] font-bold leading-none text-[#0F172A]">Gestão de Questões</h1>
+          <p className="mt-2 text-base text-[#64748B]">Gerencie todas as questões do Estudify</p>
         </header>
 
-        <section className="rounded-xl border bg-background p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <select
-              value={pathId}
-              onChange={(event) => setPathId(event.target.value)}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none"
-              disabled={isLoadingFilters}
+        <section className="rounded-2xl border border-[#E5E7EB] bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-[#E5E7EB] p-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-1 flex-col gap-3 md:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94A3B8]" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Buscar questões..."
+                  className="h-12 rounded-xl border-[#E5E7EB] bg-[#F8FAFC] pl-10"
+                />
+              </div>
+
+              <select
+                value={selectedCategory}
+                onChange={(event) => setSelectedCategory(event.target.value)}
+                className="h-12 min-w-[220px] rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 text-sm outline-none"
+                disabled={isLoadingOptions}
+              >
+                <option value="">Todas as categorias</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleOpenCreateSheet}
+              className="h-11 rounded-xl bg-[#A21CAF] px-5 text-white hover:bg-[#86198F]"
             >
-              <option value="">
-                {isLoadingFilters ? 'Carregando trilhas...' : 'Filtrar por trilha'}
-              </option>
-              {paths.map((path) => (
-                <option key={path.id} value={path.id}>
-                  {path.subject.name} - {path.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={examId}
-              onChange={(event) => setExamId(event.target.value)}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none"
-              disabled={isLoadingFilters}
-            >
-              <option value="">
-                {isLoadingFilters ? 'Carregando simulados...' : 'Filtrar por simulado'}
-              </option>
-              {exams.map((exam) => (
-                <option key={exam.id} value={exam.id}>
-                  {exam.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={origin}
-              onChange={(event) => setOrigin(event.target.value as QuestionOrigin | '')}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none"
-            >
-              <option value="">Filtrar por origem</option>
-              <option value="ORIGINAL">ORIGINAL</option>
-              <option value="ENGLISH">ENGLISH</option>
-              <option value="SPANISH">SPANISH</option>
-            </select>
-
-            <Input
-              placeholder="Filtrar por ano"
-              value={year}
-              onChange={(event) => setYear(event.target.value)}
-            />
-          </div>
-
-          <div className="mt-4 flex items-center gap-3">
-            <Button type="button" onClick={handleSearch}>
-              <Search />
-              Buscar
-            </Button>
-
-            <Button variant="outline" type="button" onClick={handleClearFilters}>
-              Limpar filtros
+              <Plus className="h-4 w-4" />
+              Nova Questão
             </Button>
           </div>
-        </section>
 
-        <section className="overflow-hidden rounded-xl border bg-background shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1200px] border-collapse">
               <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-4 py-3 text-sm font-medium">Matéria</th>
-                  <th className="px-4 py-3 text-sm font-medium">Trilha</th>
-                  <th className="px-4 py-3 text-sm font-medium">Questão</th>
-                  <th className="px-4 py-3 text-sm font-medium">Origem</th>
-                  <th className="px-4 py-3 text-sm font-medium">Ano</th>
-                  <th className="px-4 py-3 text-sm font-medium">Simulado</th>
-                  <th className="px-4 py-3 text-sm font-medium">Status</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Ações</th>
+                <tr className="border-b border-[#E5E7EB] bg-[#F8FAFC] text-left">
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    ID
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Questão
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Categoria
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Origem
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Trilha
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Ordem
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Status
+                  </th>
+                  <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Imagem
+                  </th>
+                  <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-wide text-[#475569]">
+                    Ações
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="px-4 py-10 text-center text-sm text-muted-foreground"
-                    >
+                    <td colSpan={9} className="px-5 py-10 text-center text-sm text-[#64748B]">
                       Carregando questões...
                     </td>
                   </tr>
-                ) : questions.length === 0 ? (
+                ) : paginatedQuestions.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="px-4 py-10 text-center text-sm text-muted-foreground"
-                    >
+                    <td colSpan={9} className="px-5 py-10 text-center text-sm text-[#64748B]">
                       Nenhuma questão encontrada.
                     </td>
                   </tr>
                 ) : (
-                  questions.map((question) => (
-                    <tr key={question.id} className="border-b last:border-b-0">
-                      <td className="px-4 py-3 text-sm">
-                        {getSubjectNameByPathId(question.path_id)}
+                  paginatedQuestions.map((question, index) => (
+                    <tr key={question.id} className="border-b border-[#E5E7EB] last:border-b-0">
+                      <td className="px-5 py-4 text-sm text-[#0F172A]">
+                        #{(currentPage - 1) * UI_PAGE_SIZE + index + 1}
                       </td>
-                      <td className="px-4 py-3 text-sm">{question.path?.name ?? '-'}</td>
-                      <td className="max-w-[420px] px-4 py-3 text-sm">{question.text}</td>
-                      <td className="px-4 py-3 text-sm">{question.origin}</td>
-                      <td className="px-4 py-3 text-sm">{question.year}</td>
-                      <td className="px-4 py-3 text-sm">{question.exam?.name ?? 'Banco geral'}</td>
-                      <td className="px-4 py-3 text-sm">{question.enable ? 'Ativa' : 'Inativa'}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
+
+                      <td className="max-w-[360px] px-5 py-4 text-sm text-[#0F172A]">
+                        <span className="line-clamp-2">{question.text}</span>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <CategoryBadge label={getSubjectNameByPathId(question.path_id)} />
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <OriginBadge label={question.origin} />
+                      </td>
+
+                      <td className="px-5 py-4 text-sm text-[#475569]">
+                        {question.path?.name ?? '-'}
+                      </td>
+
+                      <td className="px-5 py-4 text-sm text-[#475569]">
+                        {getQuestionOrder(question)}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <StatusBadge enabled={question.enable} />
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <div className="flex items-center justify-center">
+                          <ImageIcon
+                            className={`h-4 w-4 ${
+                              question.image ? 'text-[#65A30D]' : 'text-[#94A3B8]'
+                            }`}
+                          />
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-3">
+                          <button
                             type="button"
                             onClick={() => handleOpenEditSheet(question)}
+                            className="text-[#0F172A] transition hover:opacity-70"
                           >
-                            Editar
-                          </Button>
+                            <Pencil className="h-4 w-4" />
+                          </button>
 
-                          <Button
-                            variant="destructive"
+                          <button
                             type="button"
                             onClick={() => handleDeleteQuestion(question.id)}
+                            className="text-[#EF4444] transition hover:opacity-70"
                           >
-                            <Trash2 />
-                            Excluir
-                          </Button>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -346,6 +390,32 @@ export function QuestionsPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex items-center justify-between px-5 py-4">
+            <p className="text-sm text-[#64748B]">{paginationLabel}</p>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl border-[#E5E7EB]"
+                onClick={() => setCurrentPage((previous) => Math.max(previous - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl border-[#E5E7EB]"
+                onClick={() => setCurrentPage((previous) => Math.min(previous + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+            </div>
           </div>
         </section>
       </div>
@@ -367,5 +437,47 @@ export function QuestionsPage() {
         onSubmit={handleSubmitForm}
       />
     </>
+  );
+}
+
+type CategoryBadgeProps = {
+  label: string;
+};
+
+function CategoryBadge({ label }: CategoryBadgeProps) {
+  return (
+    <span className="inline-flex rounded-full border border-[#E9D5FF] bg-[#FAF5FF] px-3 py-1 text-xs font-medium text-[#9333EA]">
+      {label}
+    </span>
+  );
+}
+
+type OriginBadgeProps = {
+  label: string;
+};
+
+function OriginBadge({ label }: OriginBadgeProps) {
+  return (
+    <span className="inline-flex rounded-full border border-[#86EFAC] bg-[#F0FDF4] px-3 py-1 text-xs font-medium text-[#65A30D]">
+      {label}
+    </span>
+  );
+}
+
+type StatusBadgeProps = {
+  enabled: boolean;
+};
+
+function StatusBadge({ enabled }: StatusBadgeProps) {
+  return (
+    <span
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${
+        enabled
+          ? 'border-[#BBF7D0] bg-[#F0FDF4] text-[#16A34A]'
+          : 'border-[#FECACA] bg-[#FEF2F2] text-[#EF4444]'
+      }`}
+    >
+      {enabled ? 'OK' : 'Erro'}
+    </span>
   );
 }
