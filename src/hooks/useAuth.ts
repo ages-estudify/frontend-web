@@ -7,16 +7,16 @@ export function useAuth() {
 
   async function login(email: string, password: string) {
     const response = await loginService({ email, password });
-    const { token, role, planActive } = response.data;
+    const { token, role, planExpirationDate } = response;
 
-    if (role !== 'ADMIN') {
+    if (role !== 'ADM') {
       throw new Error('Acesso restrito ao painel administrativo.');
     }
 
     storage.setToken(token);
     storage.setRole(role);
-    storage.setPlanActive(planActive);
-    navigate('/admin/dashboard');
+    storage.setPlanActive(planExpirationDate > new Date());
+    navigate('/');
   }
 
   function logout() {

@@ -1,6 +1,6 @@
-const TOKEN_KEY = 'estudify_token'
-const ROLE_KEY = 'estudify_role'
-const PLAN_KEY = 'estudify_plan_active'
+const TOKEN_KEY = 'estudify_token';
+const ROLE_KEY = 'estudify_role';
+const PLAN_KEY = 'estudify_plan_active';
 
 export const storage = {
   setToken: (token: string) => localStorage.setItem(TOKEN_KEY, token),
@@ -14,8 +14,8 @@ export const storage = {
   getPlanActive: () => localStorage.getItem(PLAN_KEY) === 'true',
 
   clear: () => {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(ROLE_KEY)
-    localStorage.removeItem(PLAN_KEY)
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(PLAN_KEY);
   },
-}
+};
