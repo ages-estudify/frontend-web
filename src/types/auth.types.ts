@@ -23,10 +23,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  success: boolean;
-  data: {
-    token: string;
-    role: string;
-    planActive: boolean;
-  };
+  token: string;
+  role: string;
+  planExpirationDate: Date;
 }

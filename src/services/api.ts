@@ -1,6 +1,5 @@
 import axios, { type AxiosInstance } from 'axios';
 import { storage } from '@/utils/storage';
-
 export const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1`;
 
 export const api: AxiosInstance = axios.create({
@@ -21,6 +20,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    if (error.response?.status === 401) {
+      storage.clear();
+      if (window.location.pathname !== '/login') {
+        window.location.replace('/login');
+      }
+    }
     if (axios.isAxiosError(error)) {
       return Promise.reject(error.response?.data ?? error.message);
     }

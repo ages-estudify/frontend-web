@@ -17,51 +17,6 @@ vi.mock('./ui/button', () => ({
   ),
 }));
 
-vi.mock('./ui/sidebar', () => ({
-  SidebarProvider: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="sidebar-provider">{children}</div>
-  ),
-  Sidebar: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <aside data-testid="sidebar" className={className}>
-      {children}
-    </aside>
-  ),
-  SidebarContent: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div className={className}>{children}</div>
-  ),
-  SidebarGroup: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div className={className}>{children}</div>
-  ),
-  SidebarGroupContent: ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => <div className={className}>{children}</div>,
-  SidebarMenu: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <ul className={className}>{children}</ul>
-  ),
-  SidebarMenuItem: ({ children }: { children: React.ReactNode }) => <li>{children}</li>,
-  SidebarMenuButton: ({
-    children,
-    isActive,
-    className,
-  }: {
-    children: React.ReactNode;
-    isActive?: boolean;
-    className?: string;
-  }) => (
-    <div
-      data-testid="sidebar-menu-button"
-      data-active={isActive ? 'true' : 'false'}
-      className={className}
-    >
-      {children}
-    </div>
-  ),
-}));
-
 function renderSidebar(initialPath = '/') {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
@@ -97,8 +52,9 @@ describe('AppSidebar', () => {
     const usuariosLink = screen.getByRole('link', { name: 'Usuários' });
     const dashboardLink = screen.getByRole('link', { name: 'Dashboard' });
 
-    expect(usuariosLink.parentElement).toHaveAttribute('data-active', 'true');
-    expect(dashboardLink.parentElement).toHaveAttribute('data-active', 'false');
+    expect(usuariosLink.className).toContain('bg-purple100');
+    expect(usuariosLink.className).toContain('text-white');
+    expect(dashboardLink.className).not.toContain('bg-purple100');
   });
 
   it('renderiza o botão de sair', () => {

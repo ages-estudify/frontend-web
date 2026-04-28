@@ -1,0 +1,4 @@
+path_id,exam_id,text,feedback,number,year,day,language,origin,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer
+19151807-1185-4971-88aa-d7f12022f143,,Qual é o objeto de estudo da genética?,Reveja os conceitos básicos de genética.,1,2024,,,ORIGINAL,Hereditariedade e genes,Movimento dos corpos,Ligações químicas,Ondas sonoras,Reações térmicas,A
+312914e3-6cc3-497e-b043-859ad9da872c,,Qual é a principal característica da química orgânica?,Reveja os compostos de carbono.,2,2024,,,ORIGINAL,Estudo dos metais,Estudo dos compostos de carbono,Estudo dos gases nobres,Estudo das rochas,Estudo da luz,B
+1c88ec8c-9897-40d1-8212-2eb3c03e0bc8,b64dd7ca-f24e-4f93-a226-bce0eaf9b7b4,O que a termoquímica estuda?,Reveja os conceitos de calor nas reações.,3,2024,,,ORIGINAL,Movimento dos corpos,Velocidade das ondas,Calor envolvido nas reações químicas,Campos magnéticos,Formação das rochas,C
