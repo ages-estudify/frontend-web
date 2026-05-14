@@ -67,9 +67,17 @@ export const getQuestionExams = async (): Promise<QuestionExam[]> => {
   }
 };
 
-export const createQuestion = async (payload: CreateQuestionPayload): Promise<void> => {
+export type CreateQuestionResult = { id: string | number };
+
+export const createQuestion = async (
+  payload: CreateQuestionPayload
+): Promise<CreateQuestionResult | undefined> => {
   try {
-    await api.post(QUESTIONS_BASE_PATH, payload);
+    const data = await api.post(QUESTIONS_BASE_PATH, payload);
+    if (data && typeof data === 'object' && 'id' in data) {
+      return { id: (data as { id: string | number }).id };
+    }
+    return undefined;
   } catch (error) {
     return handleApiError(error);
   }
