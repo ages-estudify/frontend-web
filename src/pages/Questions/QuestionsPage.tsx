@@ -19,6 +19,7 @@ import type {
   QuestionPath,
   UpdateQuestionPayload,
 } from '@/types/question.types';
+import { Title } from '@/components/title';
 
 const BACKEND_PAGE_SIZE = 100;
 const UI_PAGE_SIZE = 20;
@@ -235,10 +236,7 @@ export function QuestionsPage() {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <header>
-          <h1 className="text-[52px] font-bold leading-none text-[#0F172A]">Gestão de Questões</h1>
-          <p className="mt-2 text-base text-[#64748B]">Gerencie todas as questões do Estudify</p>
-        </header>
+        <Title title="Gestão de Questões" subtitle="Gerencie todas as questões do Estudify" />
 
         <section className="rounded-2xl border border-[#E5E7EB] bg-white shadow-sm">
           <div className="flex flex-col gap-4 border-b border-[#E5E7EB] p-4 xl:flex-row xl:items-center xl:justify-between">
