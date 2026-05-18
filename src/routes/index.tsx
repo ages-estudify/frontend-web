@@ -1,18 +1,6 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { HomePage } from '../pages/HomePage'
-import { NotFoundPage } from '../pages/NotFoundPage'
-
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <HomePage />,
-  },
-  {
-    path: '*',
-    element: <NotFoundPage />,
-  },
-])
+import { RouterProvider } from 'react-router-dom';
+import { router } from './router';
 
 export function Routes() {
-  return <RouterProvider router={router} />
+  return <RouterProvider router={router} />;
 }

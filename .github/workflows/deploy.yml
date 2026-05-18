@@ -1,0 +1,47 @@
+name: Deploy Front-end to Amazon S3 and CloudFront
+
+on:
+  push:
+    branches: ['main']
+
+env:
+  AWS_REGION: us-east-2 # Altere se o seu S3 estiver em outra região
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/node@v4
+        with:
+          node-version: 20 # Use a versão do Node do seu projeto (18, 20, etc)
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci # Ou 'yarn install' se usar yarn
+
+      - name: Build project
+        run: npm run build # Isso gera a pasta 'dist' ou 'build'
+        env:
+          VITE_API_BASE_URL: http://alb-estudify-152246925.us-east-2.elb.amazonaws.com
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          # Sincroniza a pasta de build (mude 'dist' para 'build' se for o caso) com o S3 deletando arquivos antigos
+          aws s3 sync dist/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          # Avisa o CloudFront para limpar o cache para que as alterações apareçam imediatamente
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
