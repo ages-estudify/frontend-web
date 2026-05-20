@@ -27,7 +27,7 @@ jobs:
       - name: Build project
         run: npm run build # Isso gera a pasta 'dist' ou 'build'
         env:
-          VITE_API_BASE_URL: http://alb-estudify-152246925.us-east-2.elb.amazonaws.com
+          VITE_API_BASE_URL: http://d2uhtao6bcv5es.cloudfront.net/
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
