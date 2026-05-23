@@ -59,19 +59,43 @@ export interface QuestionsListResponse {
   totalElements: number;
 }
 
+export interface AdminQuestion {
+  id: string;
+  discipline: string;
+  content: string;
+  question: string;
+  mockExamId: string | null;
+  enable: boolean;
+  year: number;
+  bank: string | null;
+  createdAt?: string;
+}
+
+export interface AdminQuestionsListResponse {
+  content: AdminQuestion[];
+  page: number;
+  size: number;
+  totalElements: number;
+}
+
 export interface QuestionsFilters {
   path_id?: string;
   exam_id?: string;
+  mockExamId?: string;
+  discipline?: string;
+  content?: string;
+  bank?: string;
   origin?: QuestionOrigin | '';
   year?: number | '';
+  enable?: 'true' | 'false';
   page?: number;
   size?: number;
 }
 
-export interface QuestionsApiResponse {
-  success: boolean;
-  data: QuestionsListResponse;
-}
+// export interface QuestionsApiResponse {
+//   success: boolean;
+//   data: QuestionsListResponse;
+// }
 
 export interface QuestionByIdApiResponse {
   success: boolean;

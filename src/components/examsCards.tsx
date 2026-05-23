@@ -24,11 +24,14 @@ type ExamCardProps = {
   metadata: string[];
 
   questions: ExamCardQuestion[];
+  isLoadingQuestions?: boolean;
+  isDeleting?: boolean;
 
   labels: ExamCardLabels;
 
   onEdit?: () => void;
   onDelete?: () => void;
+  onExpandChange?: (expanded: boolean) => void;
   onAddQuestion?: () => void;
   onDeleteQuestion?: (questionId: string) => void;
 };
@@ -39,16 +42,23 @@ export function ExamCard({
   title,
   metadata,
   questions,
+  isLoadingQuestions = false,
+  isDeleting = false,
   labels,
   onEdit,
   onDelete,
+  onExpandChange,
   onAddQuestion,
   onDeleteQuestion,
 }: ExamCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   function handleToggleExpanded() {
-    setIsExpanded((currentValue) => !currentValue);
+    setIsExpanded((currentValue) => {
+      const nextValue = !currentValue;
+      onExpandChange?.(nextValue);
+      return nextValue;
+    });
   }
 
   return (
@@ -85,8 +95,9 @@ export function ExamCard({
           <button
             type="button"
             onClick={onDelete}
+            disabled={isDeleting}
             aria-label={labels.deleteAriaLabel}
-            className="text-red-500 transition hover:text-red-600"
+            className="text-red-500 transition hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Trash2 size={18} />
           </button>
@@ -98,6 +109,12 @@ export function ExamCard({
           <h4 className="mb-4 text-sm font-semibold text-slate-700">{labels.questionsTitle}</h4>
 
           <div className="flex flex-col gap-3">
+            {isLoadingQuestions ? (
+              <p className="text-sm text-slate-500">Carregando questões...</p>
+            ) : questions.length === 0 ? (
+              <p className="text-sm text-slate-500">Nenhuma questão neste simulado.</p>
+            ) : null}
+
             {questions.map((question, index) => (
               <div
                 key={question.id}
