@@ -770,9 +770,11 @@ function ReviewCard({ item, onEdit }: ReviewCardProps) {
             </span>
           </div>
 
-          <p className="mt-3 text-sm" style={{ color: current.textColor }}>
-            {current.message}
-          </p>
+          {'message' in current ? (
+            <p className="mt-3 text-sm" style={{ color: current.textColor }}>
+              {current.message}
+            </p>
+          ) : null}
         </div>
 
         {item.status !== 'success' ? (

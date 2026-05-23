@@ -12,23 +12,20 @@ describe('auth.service', () => {
   });
 
   it('deve retornar dados do usuário ao fazer login com sucesso', async () => {
-    const mockResponse = {
+    const planExpirationDate = new Date();
+    vi.spyOn(api, 'post').mockResolvedValue({
       data: {
-        success: true,
-        data: {
-          token: 'jwt-token',
-          role: 'ADMIN',
-          planActive: false,
-        },
+        token: 'jwt-token',
+        role: 'ADM',
+        planExpirationDate,
       },
-    };
-
-    vi.spyOn(api, 'post').mockResolvedValue(mockResponse);
+    });
 
     const result = await login({ email: 'admin@test.com', password: '123456' });
 
-    expect(result.data.token).toBe('jwt-token');
-    expect(result.data.role).toBe('ADMIN');
+    expect(result.token).toBe('jwt-token');
+    expect(result.role).toBe('ADM');
+    expect(result.planExpirationDate).toBe(planExpirationDate);
   });
 
   it('deve lançar erro quando a API retornar falha', async () => {

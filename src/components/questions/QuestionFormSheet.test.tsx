@@ -5,7 +5,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initialQuestionFormState } from '@/components/questions/question-form.constants';
 import { QuestionFormSheet } from '@/components/questions/QuestionFormSheet';
 import * as questionService from '@/services/question.service';
-import type { QuestionFormData, QuestionPath } from '@/types/question.types';
+import type {
+  CreateQuestionPayload,
+  QuestionFormData,
+  QuestionPath,
+  UpdateQuestionPayload,
+} from '@/types/question.types';
+
+type QuestionFormOnSubmit = (
+  payload: CreateQuestionPayload | UpdateQuestionPayload
+) => void | Promise<void>;
 
 vi.mock('@/components/ui/sheet', () => ({
   Sheet: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
@@ -40,12 +49,12 @@ function QuestionFormSheetHarness({
   mode = 'create',
   initialFormData = initialQuestionFormState,
   onOpenChange = vi.fn(),
-  onSubmit = vi.fn().mockResolvedValue(undefined),
+  onSubmit = vi.fn().mockResolvedValue(undefined) as QuestionFormOnSubmit,
 }: {
   mode?: 'create' | 'edit';
   initialFormData?: QuestionFormData;
   onOpenChange?: (open: boolean) => void;
-  onSubmit?: ReturnType<typeof vi.fn>;
+  onSubmit?: QuestionFormOnSubmit;
 }) {
   const [formData, setFormData] = useState(initialFormData);
 
@@ -89,8 +98,8 @@ describe('QuestionFormSheet', () => {
   });
 
   it('deve exibir erros de validação ao enviar o formulário vazio', async () => {
-    const onSubmit = vi.fn();
-    render(<QuestionFormSheetHarness onSubmit={onSubmit} />);
+    const onSubmitMock = vi.fn();
+    render(<QuestionFormSheetHarness onSubmit={onSubmitMock as QuestionFormOnSubmit} />);
 
     await waitFor(() => {
       expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
@@ -104,12 +113,12 @@ describe('QuestionFormSheet', () => {
 
     expect(screen.getByText('Informe a ordem.')).toBeInTheDocument();
     expect(screen.getByText('Informe a alternativa A.')).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onSubmitMock).not.toHaveBeenCalled();
   });
 
   it('deve chamar onSubmit com payload válido quando o formulário está preenchido', async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<QuestionFormSheetHarness onSubmit={onSubmit} />);
+    const onSubmitMock = vi.fn().mockResolvedValue(undefined);
+    render(<QuestionFormSheetHarness onSubmit={onSubmitMock as QuestionFormOnSubmit} />);
 
     await waitFor(() => {
       expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
@@ -148,10 +157,10 @@ describe('QuestionFormSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar Questão' }));
 
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledTimes(1);
+      expect(onSubmitMock).toHaveBeenCalledTimes(1);
     });
 
-    const payload = onSubmit.mock.calls[0][0] as {
+    const payload = onSubmitMock.mock.calls[0][0] as {
       path_id: string;
       text: string;
       alternatives: { letter: string; is_correct: boolean }[];
