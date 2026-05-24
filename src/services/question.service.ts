@@ -1,14 +1,18 @@
 import api, { handleApiError } from './api';
+import {
+  buildAdminCreatePayload,
+  buildAdminUpdatePayload,
+  mapAdminQuestionToQuestion,
+} from './question.mapper';
 import type {
   AdminQuestion,
+  AdminQuestionApi,
   AdminQuestionsListResponse,
   CreateQuestionPayload,
   ImportQuestionsResponse,
   QuestionByIdApiResponse,
   QuestionExam,
-  QuestionExamsApiResponse,
   QuestionPath,
-  QuestionPathsApiResponse,
   QuestionsFilters,
   QuestionsListResponse,
   UpdateQuestionPayload,
@@ -31,6 +35,19 @@ function normalizeAdminQuestionsList(response: unknown): AdminQuestionsListRespo
   return { content: [], page: 0, size: PAGE_SIZE, totalElements: 0 };
 }
 
+function normalizeArrayResponse<T>(response: unknown): T[] {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (response && typeof response === 'object' && 'data' in response) {
+    const data = (response as { data?: T[] }).data;
+    return Array.isArray(data) ? data : [];
+  }
+
+  return [];
+}
+
 const buildQuestionsParams = (filters?: QuestionsFilters) => {
   if (!filters) return {};
 
@@ -47,6 +64,17 @@ const buildQuestionsParams = (filters?: QuestionsFilters) => {
   };
 };
 
+async function mapQuestionsListResponse(
+  adminList: AdminQuestionsListResponse
+): Promise<QuestionsListResponse> {
+  const paths = await getQuestionPaths();
+
+  return {
+    ...adminList,
+    content: adminList.content.map((item) => mapAdminQuestionToQuestion(item, paths)),
+  };
+}
+
 export const getQuestions = async (filters?: QuestionsFilters): Promise<QuestionsListResponse> => {
   try {
     const response = await api.get(QUESTIONS_BASE_PATH, {
@@ -54,7 +82,7 @@ export const getQuestions = async (filters?: QuestionsFilters): Promise<Question
     });
 
     const adminList = normalizeAdminQuestionsList(response);
-    return adminList as unknown as QuestionsListResponse;
+    return mapQuestionsListResponse(adminList);
   } catch (error) {
     return handleApiError(error);
   }
@@ -138,8 +166,14 @@ export const getQuestionsByMockExamId = async (
 
 export const getQuestionById = async (id: string) => {
   try {
-    const response = await api.get<QuestionByIdApiResponse>(`${QUESTIONS_BASE_PATH}/${id}`);
-    return response.data;
+    const response = await api.get(`${QUESTIONS_BASE_PATH}/${id}`);
+
+    if (response && typeof response === 'object' && 'data' in response) {
+      return (response as QuestionByIdApiResponse).data;
+    }
+
+    const paths = await getQuestionPaths();
+    return mapAdminQuestionToQuestion(response as AdminQuestionApi, paths);
   } catch (error) {
     return handleApiError(error);
   }
@@ -147,8 +181,8 @@ export const getQuestionById = async (id: string) => {
 
 export const getQuestionPaths = async (): Promise<QuestionPath[]> => {
   try {
-    const response = (await api.get(`${QUESTIONS_BASE_PATH}/paths`)) as QuestionPathsApiResponse;
-    return response.data;
+    const response = await api.get(`${QUESTIONS_BASE_PATH}/paths`);
+    return normalizeArrayResponse<QuestionPath>(response);
   } catch (error) {
     return handleApiError(error);
   }
@@ -156,8 +190,8 @@ export const getQuestionPaths = async (): Promise<QuestionPath[]> => {
 
 export const getQuestionExams = async (): Promise<QuestionExam[]> => {
   try {
-    const response = (await api.get(`${QUESTIONS_BASE_PATH}/exams`)) as QuestionExamsApiResponse;
-    return response.data;
+    const response = await api.get(`${QUESTIONS_BASE_PATH}/exams`);
+    return normalizeArrayResponse<QuestionExam>(response);
   } catch (error) {
     return handleApiError(error);
   }
@@ -169,10 +203,14 @@ export const createQuestion = async (
   payload: CreateQuestionPayload
 ): Promise<CreateQuestionResult | undefined> => {
   try {
-    const data = await api.post(QUESTIONS_BASE_PATH, payload);
+    const paths = await getQuestionPaths();
+    const adminPayload = buildAdminCreatePayload(payload, paths);
+    const data = await api.post(QUESTIONS_BASE_PATH, adminPayload);
+
     if (data && typeof data === 'object' && 'id' in data) {
       return { id: (data as { id: string | number }).id };
     }
+
     return undefined;
   } catch (error) {
     return handleApiError(error);
@@ -181,7 +219,9 @@ export const createQuestion = async (
 
 export const updateQuestion = async (id: string, payload: UpdateQuestionPayload): Promise<void> => {
   try {
-    await api.put(`${QUESTIONS_BASE_PATH}/${id}`, payload);
+    const paths = await getQuestionPaths();
+    const adminPayload = buildAdminUpdatePayload(payload, paths);
+    await api.put(`${QUESTIONS_BASE_PATH}/${id}`, adminPayload);
   } catch (error) {
     return handleApiError(error);
   }

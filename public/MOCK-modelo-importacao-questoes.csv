@@ -1,0 +1,11 @@
+discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number
+Matemática,Álgebra,Qual é o valor de x na equação 2x + 4 = 10?,1,2,3,4,5,C,A resposta correta é 3,ORIGINAL,2024,1
+Matemática,Geometria,Qual figura possui quatro lados iguais e quatro ângulos retos?,Triângulo,Círculo,Quadrado,Hexágono,Retângulo,C,Quadrado é um quadrilátero regular,ORIGINAL,2024,2
+Português,Interpretação de Texto,O que significa inferir informações em um texto?,Copiar trechos literais,Concluir dados não explícitos,Ignorar o contexto,Resumir o título,Contar palavras,B,Inferir é deduzir informações implícitas,ORIGINAL,2024,3
+História,Antiguidade,Qual civilização construiu as pirâmides de Gizé?,Romanos,Gregos,Maias,Egípcios,Persas,D,As pirâmides foram erguidas no Egito antigo,ORIGINAL,2024,4
+Física,Mecânica,Qual grandeza mede a rapidez com que a velocidade muda?,Força,Trabalho,Aceleração,Massa,Pressão,C,Aceleração é a variação da velocidade no tempo,ORIGINAL,2024,5
+Biologia,Genética,Qual é o objeto de estudo da genética?,Hereditariedade e genes,Movimento dos corpos,Ligações químicas,Ondas sonoras,Reações térmicas,A,Genética estuda hereditariedade e genes,ORIGINAL,2024,6
+Química,Química Orgânica,Qual é a principal característica da química orgânica?,Estudo dos metais,Estudo dos compostos de carbono,Estudo dos gases nobres,Estudo das rochas,Estudo da luz,B,Química orgânica foca compostos de carbono,ORIGINAL,2024,7
+Português,Redação,Em uma dissertação o que se espera da introdução?,Apenas citar autores,Apresentar tese e delimitar tema,Listar opiniões pessoais,Resumir conclusão,Usar adjetivos,B,A introdução apresenta tema e tese,ORIGINAL,2024,8
+Matemática,Trigonometria,Qual é o valor de sen(90°)?,0,1,0.5,-1,2,B,O seno de 90 graus é igual a 1,SIMPLIFIED,2023,9
+Geografia,Geografia Física,O que estuda a geomorfologia?,Clima da Terra,Relevo e formas do terreno,População humana,Fronteiras políticas,Comércio internacional,B,Geomorfologia estuda formas e processos do relevo,SIMPLIFIED,2023,10

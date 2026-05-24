@@ -20,6 +20,7 @@ import type {
   UpdateQuestionPayload,
 } from '@/types/question.types';
 import { Title } from '@/components/title';
+import { formatApiError } from '@/utils/api-error';
 
 const BACKEND_PAGE_SIZE = 100;
 const UI_PAGE_SIZE = 20;
@@ -40,6 +41,7 @@ export function QuestionsPage() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [submitError, setSubmitError] = useState('');
 
   const loadOptions = async () => {
     try {
@@ -116,18 +118,19 @@ export function QuestionsPage() {
   };
 
   const categoryOptions = useMemo(() => {
-    const categories = paths.map((path) => path.subject.name);
+    const categories = paths.map((path) => path.subject?.name).filter(Boolean) as string[];
     return Array.from(new Set(categories)).sort((a, b) => a.localeCompare(b));
   }, [paths]);
 
   const filteredQuestions = useMemo(() => {
     return questions.filter((question) => {
-      const subjectName = getSubjectNameByPathId(question.path_id);
+      const subjectName = question.path?.subject?.name ?? getSubjectNameByPathId(question.path_id);
       const searchValue = search.trim().toLowerCase();
+      const questionText = (question.text ?? '').toLowerCase();
 
       const matchesSearch =
         !searchValue ||
-        question.text.toLowerCase().includes(searchValue) ||
+        questionText.includes(searchValue) ||
         question.path?.name?.toLowerCase().includes(searchValue) ||
         subjectName.toLowerCase().includes(searchValue);
 
@@ -167,6 +170,7 @@ export function QuestionsPage() {
     setFormMode('create');
     setSelectedQuestion(null);
     setFormData(initialQuestionFormState);
+    setSubmitError('');
     setIsFormSheetOpen(true);
   };
 
@@ -214,6 +218,7 @@ export function QuestionsPage() {
   const handleSubmitForm = async (payload: CreateQuestionPayload | UpdateQuestionPayload) => {
     try {
       setIsSubmitting(true);
+      setSubmitError('');
 
       if (formMode === 'create') {
         await createQuestion(payload as CreateQuestionPayload);
@@ -227,7 +232,7 @@ export function QuestionsPage() {
       await loadAllQuestions();
       setCurrentPage(1);
     } catch (error) {
-      console.error('Erro ao salvar questão:', error);
+      setSubmitError(formatApiError(error, 'Não foi possível salvar a questão.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -335,7 +340,11 @@ export function QuestionsPage() {
                       </td>
 
                       <td className="px-5 py-4">
-                        <CategoryBadge label={getSubjectNameByPathId(question.path_id)} />
+                        <CategoryBadge
+                          label={
+                            question.path?.subject?.name ?? getSubjectNameByPathId(question.path_id)
+                          }
+                        />
                       </td>
 
                       <td className="px-5 py-4">
@@ -426,12 +435,14 @@ export function QuestionsPage() {
           if (!open) {
             setSelectedQuestion(null);
             setFormData(initialQuestionFormState);
+            setSubmitError('');
           }
         }}
         mode={formMode}
         formData={formData}
         setFormData={setFormData}
         isSubmitting={isSubmitting}
+        submitError={submitError}
         onSubmit={handleSubmitForm}
       />
     </>

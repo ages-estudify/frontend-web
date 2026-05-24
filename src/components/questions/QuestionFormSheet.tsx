@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { ImageUp } from 'lucide-react';
 
+import { splitQuestionText, joinQuestionText } from '@/components/questions/question-text.utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { colors } from '@/constants/colors';
@@ -21,10 +22,16 @@ type QuestionFormSheetProps = {
   formData: QuestionFormData;
   setFormData: React.Dispatch<React.SetStateAction<QuestionFormData>>;
   isSubmitting?: boolean;
+  submitError?: string;
+  /** Na revisão de import CSV a ordem é obrigatória; na gestão é opcional (API ainda não persiste). */
+  requireOrder?: boolean;
   onSubmit: (payload: CreateQuestionPayload | UpdateQuestionPayload) => Promise<void> | void;
 };
 
 const alternativeLetters: QuestionAlternativeLetter[] = ['A', 'B', 'C', 'D', 'E'];
+
+type FormFieldErrorKey = keyof QuestionFormData | 'title' | 'statement';
+type FormErrors = Partial<Record<FormFieldErrorKey, string>>;
 
 export function QuestionFormSheet({
   open,
@@ -33,9 +40,11 @@ export function QuestionFormSheet({
   formData,
   setFormData,
   isSubmitting = false,
+  submitError = '',
+  requireOrder = false,
   onSubmit,
 }: QuestionFormSheetProps) {
-  const [errors, setErrors] = React.useState<Partial<Record<keyof QuestionFormData, string>>>({});
+  const [errors, setErrors] = React.useState<FormErrors>({});
   const [paths, setPaths] = React.useState<QuestionPath[]>([]);
   const [isLoadingPaths, setIsLoadingPaths] = React.useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = React.useState('');
@@ -84,27 +93,17 @@ export function QuestionFormSheet({
   React.useEffect(() => {
     if (!open) return;
 
-    if (!formData.text) {
-      setQuestionTitle('');
-      setQuestionStatement('');
-      return;
-    }
-
-    const parts = formData.text.split('\n\n');
-
-    if (parts.length > 1) {
-      setQuestionTitle(parts[0] ?? '');
-      setQuestionStatement(parts.slice(1).join('\n\n'));
-    } else {
-      setQuestionTitle(formData.text);
-      setQuestionStatement('');
-    }
+    const { title, statement } = splitQuestionText(formData.text);
+    setQuestionTitle(title);
+    setQuestionStatement(statement);
   }, [open, formData.text]);
 
   const subjectOptions = React.useMemo(() => {
     const subjectMap = new Map<string, { id: string; name: string }>();
 
     paths.forEach((path) => {
+      if (!path.subject) return;
+
       subjectMap.set(path.subject.id, {
         id: path.subject.id,
         name: path.subject.name,
@@ -176,7 +175,7 @@ export function QuestionFormSheet({
   };
 
   const validateForm = () => {
-    const newErrors: Partial<Record<keyof QuestionFormData, string>> = {};
+    const newErrors: FormErrors = {};
 
     if (!selectedSubjectId) {
       newErrors.path_id = 'Selecione uma matéria.';
@@ -186,13 +185,17 @@ export function QuestionFormSheet({
       newErrors.path_id = 'Selecione uma trilha.';
     }
 
-    if (!questionTitle.trim() && !questionStatement.trim()) {
-      newErrors.text = 'Informe o enunciado da questão.';
+    if (!questionTitle.trim()) {
+      newErrors.title = 'Informe o título da questão.';
     }
 
-    if (!formData.number.trim()) {
+    if (!questionStatement.trim()) {
+      newErrors.statement = 'Informe o enunciado da questão.';
+    }
+
+    if (requireOrder && !formData.number.trim()) {
       newErrors.number = 'Informe a ordem.';
-    } else if (Number.isNaN(Number(formData.number))) {
+    } else if (formData.number.trim() && Number.isNaN(Number(formData.number))) {
       newErrors.number = 'Informe um número válido.';
     }
 
@@ -215,7 +218,7 @@ export function QuestionFormSheet({
   };
 
   const buildPayload = (): CreateQuestionPayload | UpdateQuestionPayload => {
-    const fullText = [questionTitle.trim(), questionStatement.trim()].filter(Boolean).join('\n\n');
+    const fullText = joinQuestionText(questionTitle, questionStatement);
 
     const alternatives: CreateQuestionPayload['alternatives'] = [
       {
@@ -301,13 +304,29 @@ export function QuestionFormSheet({
 
           <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto">
             <div className="space-y-5 px-6 py-4">
+              {submitError && (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {submitError}
+                </p>
+              )}
+
+              {!requireOrder ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  A ordem ainda não é salva pelo servidor. Você pode preencher para se organizar,
+                  mas ao reabrir a questão o campo pode aparecer vazio.
+                </p>
+              ) : null}
+
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <FormField label="Título da Questão *" error={errors.text}>
+                <FormField label="Título da Questão *" error={errors.title}>
                   <TextInput
                     value={questionTitle}
-                    onChange={(event) => setQuestionTitle(event.target.value)}
+                    onChange={(event) => {
+                      setQuestionTitle(event.target.value);
+                      setErrors((previous) => ({ ...previous, title: undefined }));
+                    }}
                     placeholder="Ex: Interpretação de Texto - Machado de Assis"
-                    hasError={!!errors.text}
+                    hasError={!!errors.title}
                   />
                 </FormField>
 
@@ -364,7 +383,10 @@ export function QuestionFormSheet({
                   </select>
                 </FormField>
 
-                <FormField label="Ordem *" error={errors.number}>
+                <FormField
+                  label={requireOrder ? 'Ordem *' : 'Ordem (opcional)'}
+                  error={errors.number}
+                >
                   <TextInput
                     value={formData.number}
                     onChange={(event) => updateField('number', event.target.value)}
@@ -374,12 +396,15 @@ export function QuestionFormSheet({
                 </FormField>
               </div>
 
-              <FormField label="Enunciado da Questão *" error={errors.text}>
+              <FormField label="Enunciado da Questão *" error={errors.statement}>
                 <Textarea
                   value={questionStatement}
-                  onChange={(event) => setQuestionStatement(event.target.value)}
+                  onChange={(event) => {
+                    setQuestionStatement(event.target.value);
+                    setErrors((previous) => ({ ...previous, statement: undefined }));
+                  }}
                   placeholder="Digite o enunciado completo da questão..."
-                  hasError={!!errors.text}
+                  hasError={!!errors.statement}
                   className="min-h-[95px]"
                 />
               </FormField>

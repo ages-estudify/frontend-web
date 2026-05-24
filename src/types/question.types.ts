@@ -59,6 +59,33 @@ export interface QuestionsListResponse {
   totalElements: number;
 }
 
+export type AdminQuestionType = 'SIMPLIFIED' | 'ORIGINAL';
+
+export interface AdminQuestionAlternatives {
+  A: string;
+  B: string;
+  C: string;
+  D: string;
+  E: string;
+}
+
+export interface AdminQuestionApi {
+  id: string;
+  discipline: string;
+  content: string;
+  question: string;
+  alternatives?: AdminQuestionAlternatives;
+  correctAnswer?: string;
+  answerExplanation?: string;
+  type?: AdminQuestionType;
+  mockExamId?: string | null;
+  enable?: boolean;
+  year: number;
+  number?: number | null;
+  bank?: string | null;
+  createdAt?: string;
+}
+
 export interface AdminQuestion {
   id: string;
   discipline: string;
@@ -72,7 +99,7 @@ export interface AdminQuestion {
 }
 
 export interface AdminQuestionsListResponse {
-  content: AdminQuestion[];
+  content: AdminQuestionApi[];
   page: number;
   size: number;
   totalElements: number;
