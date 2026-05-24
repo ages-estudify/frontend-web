@@ -2,6 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 
 import { ExamFormSheet } from '@/components/exams/ExamFormSheet';
+import { ExamImportReviewSheet } from '@/components/exams/ExamImportReviewSheet';
+import {
+  buildExamReviewItems,
+  parseExamCsvContent,
+  readFileAsText,
+  type ExamReviewItem,
+} from '@/components/exams/exam-import.utils';
 import { ExamCard, type ExamCardQuestion } from '@/components/examsCards';
 import { Title } from '@/components/title';
 import { Input } from '@/components/ui/input';
@@ -36,6 +43,9 @@ export function ExamsPage() {
   const [loadingQuestionsExamId, setLoadingQuestionsExamId] = useState<string | null>(null);
   const [deletingExamId, setDeletingExamId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
+
+  const [reviewItems, setReviewItems] = useState<ExamReviewItem[]>([]);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const loadExams = useCallback(async () => {
     try {
@@ -101,8 +111,11 @@ export function ExamsPage() {
       if (formMode === 'create') {
         if (!data.documentFile) return;
 
+        const csvContent = await readFileAsText(data.documentFile);
+        const csvRows = parseExamCsvContent(csvContent);
+
         const importResult = await importExam(data.documentFile);
-        const { importedQuestions, failed, errors } = importResult.data;
+        const { examId, importedQuestions, failed, errors } = importResult.data;
 
         if (importedQuestions === 0) {
           const detail =
@@ -118,8 +131,28 @@ export function ExamsPage() {
           return;
         }
 
-        await linkUnlinkedQuestionsToExam(importResult.data.examId, importedQuestions);
-      } else if (selectedExam) {
+        await linkUnlinkedQuestionsToExam(examId, importedQuestions);
+
+        if (data.imageFile) {
+          await updateExam(examId, { image: data.imageFile });
+        }
+
+        const importedQuestionList = await getQuestionsByMockExamId(examId, {
+          expectedCount: importedQuestions,
+        });
+
+        const items = buildExamReviewItems(csvRows, errors, importedQuestionList);
+
+        setReviewItems(items);
+        setIsFormSheetOpen(false);
+        setSelectedExam(null);
+        setFormInitialValues({});
+        setExamQuestionsById({});
+        setIsReviewOpen(true);
+        return;
+      }
+
+      if (selectedExam) {
         await updateExam(selectedExam.id, {
           title: data.name,
           origin: data.origin,
@@ -142,6 +175,18 @@ export function ExamsPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleFinishReview = async () => {
+    setIsReviewOpen(false);
+    setReviewItems([]);
+    await loadExams();
+  };
+
+  const handleCloseReview = () => {
+    setIsReviewOpen(false);
+    setReviewItems([]);
+    void loadExams();
   };
 
   const loadExamQuestions = useCallback(async (exam: ExamListItem) => {
@@ -239,7 +284,7 @@ export function ExamsPage() {
             </div>
           </div>
 
-          <div className="relative h-[36px] w-[143px]">
+          <div className="relative h-[36px] w-[167px]">
             <select
               value={selectedOrigin}
               onChange={(event) => setSelectedOrigin(event.target.value)}
@@ -279,16 +324,12 @@ export function ExamsPage() {
                 expand: 'Expandir',
                 collapse: 'Recolher',
                 questionsTitle: 'Questões neste simulado:',
-                addQuestion: 'Adicionar Questão',
                 editAriaLabel: 'Editar simulado',
                 deleteAriaLabel: 'Excluir simulado',
-                deleteQuestionAriaLabel: 'Excluir questão',
               }}
               onExpandChange={(expanded) => handleExpandChange(exam, expanded)}
               onEdit={() => handleOpenEditExam(exam)}
               onDelete={() => handleDeleteExam(exam)}
-              onAddQuestion={() => console.log('adicionar questão')}
-              onDeleteQuestion={(questionId) => console.log('excluir questão', questionId)}
             />
           ))
         )}
@@ -303,6 +344,13 @@ export function ExamsPage() {
         isSubmitting={isSubmitting}
         submitError={submitError}
         onSubmit={handleSubmitForm}
+      />
+
+      <ExamImportReviewSheet
+        open={isReviewOpen}
+        items={reviewItems}
+        onClose={handleCloseReview}
+        onFinish={handleFinishReview}
       />
     </>
   );
