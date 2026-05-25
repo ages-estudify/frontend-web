@@ -21,5 +21,22 @@ export default defineConfig({
         inline: ['react-router', 'react-router-dom'],
       },
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: [
+        'src/pages/ExamsPage.tsx',
+        'src/components/exams/**/*.{ts,tsx}',
+        'src/components/examsCards.tsx',
+        'src/services/exam.service.ts',
+      ],
+      exclude: ['**/*.test.{ts,tsx}'],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
+    },
   },
 });

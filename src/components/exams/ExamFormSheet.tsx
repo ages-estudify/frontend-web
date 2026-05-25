@@ -54,6 +54,39 @@ function FormField({
   );
 }
 
+type ExamImagePickerProps = {
+  previewUrl: string | null;
+  onSelect: (event: ChangeEvent<HTMLInputElement>) => void;
+};
+
+function ExamImagePicker({ previewUrl, onSelect }: ExamImagePickerProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  return (
+    <FormField label="Imagem do Simulado">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="flex h-[120px] w-[120px] items-center justify-center overflow-hidden rounded-xl bg-slate-100 transition hover:bg-slate-200"
+      >
+        {previewUrl ? (
+          <img src={previewUrl} alt="Imagem do simulado" className="h-full w-full object-cover" />
+        ) : (
+          <ImagePlus size={40} className="text-neutral-500" strokeWidth={1.5} />
+        )}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        aria-label="Selecionar imagem do simulado"
+        onChange={onSelect}
+        className="hidden"
+      />
+    </FormField>
+  );
+}
+
 function ExamFormSheetContent({
   mode,
   initialValues,
@@ -73,7 +106,6 @@ function ExamFormSheetContent({
   );
   const [fileError, setFileError] = useState('');
 
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const createdBlobRef = useRef<string | null>(null);
 
@@ -137,7 +169,7 @@ function ExamFormSheetContent({
         name: '',
         origin: '',
         day: '1',
-        imageFile: null,
+        imageFile,
         documentFile,
       });
       return;
@@ -170,6 +202,8 @@ function ExamFormSheetContent({
 
           {mode === 'create' ? (
             <>
+              <ExamImagePicker previewUrl={imagePreviewUrl} onSelect={handleImageChange} />
+
               <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3 text-sm text-slate-700">
                 <p className="font-medium text-slate-900">Formato do CSV</p>
                 <p className="mt-1 text-slate-600">
@@ -233,31 +267,7 @@ function ExamFormSheetContent({
             </>
           ) : (
             <>
-              <FormField label="Imagem do Simulado">
-                <button
-                  type="button"
-                  onClick={() => imageInputRef.current?.click()}
-                  className="flex h-[120px] w-[120px] items-center justify-center overflow-hidden rounded-xl bg-slate-100 transition hover:bg-slate-200"
-                >
-                  {imagePreviewUrl ? (
-                    <img
-                      src={imagePreviewUrl}
-                      alt="Imagem do simulado"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <ImagePlus size={40} className="text-neutral-500" strokeWidth={1.5} />
-                  )}
-                </button>
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  aria-label="Selecionar imagem do simulado"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </FormField>
+              <ExamImagePicker previewUrl={imagePreviewUrl} onSelect={handleImageChange} />
 
               <FormField label="Nome do Simulado">
                 <input
