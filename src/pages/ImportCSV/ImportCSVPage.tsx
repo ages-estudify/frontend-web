@@ -300,12 +300,7 @@ export function ImportCSVPage() {
       setEditingReviewItem(item);
 
       if (item.importedQuestionId) {
-        const questionResponse = await getQuestionById(item.importedQuestionId);
-
-        const question =
-          questionResponse && typeof questionResponse === 'object' && 'data' in questionResponse
-            ? questionResponse.data
-            : questionResponse;
+        const question = await getQuestionById(item.importedQuestionId);
 
         if (!question) {
           setFormMode('create');

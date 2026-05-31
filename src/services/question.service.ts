@@ -6,11 +6,11 @@ import {
   mapAdminQuestionToQuestion,
 } from './question.mapper';
 import type {
-  AdminQuestion,
   AdminQuestionApi,
   AdminQuestionsListResponse,
   CreateQuestionPayload,
   ImportQuestionsResponse,
+  Question,
   QuestionByIdApiResponse,
   QuestionExam,
   QuestionPath,
@@ -89,9 +89,9 @@ export const getQuestions = async (filters?: QuestionsFilters): Promise<Question
   }
 };
 
-async function fetchAllAdminQuestions(filters?: QuestionsFilters): Promise<AdminQuestion[]> {
+async function fetchAllAdminQuestions(filters?: QuestionsFilters): Promise<AdminQuestionApi[]> {
   let page = 0;
-  let allQuestions: AdminQuestion[] = [];
+  let allQuestions: AdminQuestionApi[] = [];
   let totalElements = 0;
 
   do {
@@ -139,7 +139,7 @@ export const linkUnlinkedQuestionsToExam = async (
 export const getQuestionsByMockExamId = async (
   mockExamId: string,
   options?: { expectedCount?: number }
-): Promise<AdminQuestion[]> => {
+): Promise<AdminQuestionApi[]> => {
   try {
     let questions = await fetchAllAdminQuestions({
       mockExamId,
@@ -165,9 +165,9 @@ export const getQuestionsByMockExamId = async (
   }
 };
 
-export const getQuestionById = async (id: string) => {
+export const getQuestionById = async (id: string): Promise<Question> => {
   try {
-    const response = await api.get(`${QUESTIONS_BASE_PATH}/${id}`);
+    const response = (await api.get(`${QUESTIONS_BASE_PATH}/${id}`)) as unknown;
 
     if (response && typeof response === 'object' && 'data' in response) {
       return (response as QuestionByIdApiResponse).data;

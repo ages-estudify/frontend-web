@@ -1,4 +1,4 @@
-import type { AdminQuestion } from '@/types/question.types';
+import type { AdminQuestionApi } from '@/types/question.types';
 
 export type ExamCsvRow = {
   rowNumber: number;
@@ -143,7 +143,7 @@ export async function readFileAsText(file: File): Promise<string> {
 export function buildExamReviewItems(
   rows: ExamCsvRow[],
   errors: ExamImportError[],
-  importedQuestions: AdminQuestion[]
+  importedQuestions: AdminQuestionApi[]
 ): ExamReviewItem[] {
   const errorsByRow = new Map<number, string>();
   errors.forEach((entry) => {
@@ -153,7 +153,7 @@ export function buildExamReviewItems(
   const remainingQuestions = [...importedQuestions];
   const consumed = new Set<string>();
 
-  const takeQuestionForRow = (row: ExamCsvRow): AdminQuestion | undefined => {
+  const takeQuestionForRow = (row: ExamCsvRow): AdminQuestionApi | undefined => {
     const exactMatchIndex = remainingQuestions.findIndex(
       (question) => question.question.trim() === row.question.trim() && !consumed.has(question.id)
     );

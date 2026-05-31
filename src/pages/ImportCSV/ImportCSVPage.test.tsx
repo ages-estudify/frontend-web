@@ -32,7 +32,12 @@ describe('ImportCSVPage', () => {
       {
         id: 'path-algebra',
         name: 'Álgebra',
-        subject: { id: 'sub-math', name: 'Matemática' },
+        text: 'Álgebra',
+        icon_url: '',
+        schedule_position: 0,
+        trail_position: 0,
+        subject_id: 'sub-math',
+        subject: { id: 'sub-math', name: 'Matemática', icon_url: '' },
       },
     ]);
     vi.mocked(questionService.importQuestions).mockResolvedValue({
