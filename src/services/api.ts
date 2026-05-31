@@ -1,6 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 import { storage } from '@/utils/storage';
-export const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/api/v1`;
+export const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL ?? 'https://d2uhtao6bcv5es.cloudfront.net'}/api/v1`;
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

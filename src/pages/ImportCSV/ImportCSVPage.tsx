@@ -24,59 +24,21 @@ import type {
   CreateQuestionPayload,
   Question,
   QuestionFormData,
-  QuestionOrigin,
   QuestionPath,
   UpdateQuestionPayload,
 } from '@/types/question.types';
+import {
+  getRowDisplayMeta,
+  normalizeImportData,
+  parseCsvContent,
+  resolvePathIdFromRow,
+  resolveReviewStatus,
+  type ImportApiData,
+  type ParsedCsvRow,
+  type ReviewItem,
+} from './import-csv.utils';
 
 const acceptedFileTypes = '.csv,.xlsx,.xls';
-
-type ParsedCsvRow = {
-  rowNumber: number;
-  path_id: string;
-  exam_id: string;
-  text: string;
-  feedback: string;
-  number: string;
-  year: string;
-  day: string;
-  language: string;
-  origin: QuestionOrigin;
-  alternative_a: string;
-  alternative_b: string;
-  alternative_c: string;
-  alternative_d: string;
-  alternative_e: string;
-  correct_answer: string;
-};
-
-type ReviewStatus = 'success' | 'missing_image' | 'error';
-
-type ReviewItem = {
-  id: string;
-  rowNumber: number;
-  title: string;
-  subjectName: string;
-  trailName: string;
-  status: ReviewStatus;
-  error?: string;
-  csvRow: ParsedCsvRow;
-  importedQuestionId?: string;
-};
-
-type ImportApiResult = {
-  row: number;
-  success: boolean;
-  error?: string;
-  id?: string;
-};
-
-type ImportApiData = {
-  total: number;
-  successCount: number;
-  errorCount: number;
-  results?: ImportApiResult[];
-};
 
 function hexToRgba(hex: string, opacity: number) {
   const sanitized = hex.replace('#', '');
@@ -96,85 +58,9 @@ function hexToRgba(hex: string, opacity: number) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-function parseCsvLine(line: string) {
-  const result: string[] = [];
-  let current = '';
-  let insideQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const nextChar = line[index + 1];
-
-    if (char === '"' && insideQuotes && nextChar === '"') {
-      current += '"';
-      index += 1;
-      continue;
-    }
-
-    if (char === '"') {
-      insideQuotes = !insideQuotes;
-      continue;
-    }
-
-    if (char === ',' && !insideQuotes) {
-      result.push(current);
-      current = '';
-      continue;
-    }
-
-    current += char;
-  }
-
-  result.push(current);
-  return result.map((value) => value.trim());
-}
-
-function parseCsvContent(content: string): ParsedCsvRow[] {
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length <= 1) return [];
-
-  const headers = parseCsvLine(lines[0]);
-
-  return lines.slice(1).map((line, index) => {
-    const values = parseCsvLine(line);
-
-    const getValue = (header: string) => {
-      const headerIndex = headers.indexOf(header);
-      return headerIndex >= 0 ? (values[headerIndex] ?? '') : '';
-    };
-
-    return {
-      rowNumber: index + 2,
-      path_id: getValue('path_id'),
-      exam_id: getValue('exam_id'),
-      text: getValue('text'),
-      feedback: getValue('feedback'),
-      number: getValue('number'),
-      year: getValue('year'),
-      day: getValue('day'),
-      language: getValue('language'),
-      origin: (getValue('origin') || 'ORIGINAL') as QuestionOrigin,
-      alternative_a: getValue('alternative_a'),
-      alternative_b: getValue('alternative_b'),
-      alternative_c: getValue('alternative_c'),
-      alternative_d: getValue('alternative_d'),
-      alternative_e: getValue('alternative_e'),
-      correct_answer: getValue('correct_answer'),
-    };
-  });
-}
-
-async function fileToText(file: File) {
-  return await file.text();
-}
-
-function csvRowToFormData(row: ParsedCsvRow): QuestionFormData {
+function csvRowToFormData(row: ParsedCsvRow, paths: QuestionPath[]): QuestionFormData {
   return {
-    path_id: row.path_id,
+    path_id: resolvePathIdFromRow(row, paths),
     exam_id: row.exam_id,
     text: row.text,
     feedback: row.feedback,
@@ -216,6 +102,49 @@ function questionToFormData(question: Question): QuestionFormData {
   };
 }
 
+function mergeQuestionWithReviewRow(
+  question: Question,
+  row: ParsedCsvRow,
+  paths: QuestionPath[]
+): QuestionFormData {
+  const fromApi = questionToFormData(question);
+  const fromCsv = csvRowToFormData(row, paths);
+
+  return {
+    ...fromApi,
+    number: fromApi.number || fromCsv.number,
+    path_id: fromApi.path_id || fromCsv.path_id,
+  };
+}
+
+function payloadToCsvRowPatch(
+  row: ParsedCsvRow,
+  payload: CreateQuestionPayload | UpdateQuestionPayload
+): ParsedCsvRow {
+  const correctLetter =
+    payload.alternatives.find((alternative) => alternative.is_correct)?.letter ??
+    row.correct_answer;
+
+  return {
+    ...row,
+    text: payload.text,
+    feedback: payload.feedback ?? row.feedback,
+    number:
+      payload.number !== null && payload.number !== undefined ? String(payload.number) : row.number,
+    alternative_a:
+      payload.alternatives.find((item) => item.letter === 'A')?.text ?? row.alternative_a,
+    alternative_b:
+      payload.alternatives.find((item) => item.letter === 'B')?.text ?? row.alternative_b,
+    alternative_c:
+      payload.alternatives.find((item) => item.letter === 'C')?.text ?? row.alternative_c,
+    alternative_d:
+      payload.alternatives.find((item) => item.letter === 'D')?.text ?? row.alternative_d,
+    alternative_e:
+      payload.alternatives.find((item) => item.letter === 'E')?.text ?? row.alternative_e,
+    correct_answer: correctLetter,
+  };
+}
+
 export function ImportCSVPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
@@ -252,15 +181,6 @@ export function ImportCSVPage() {
   const missingImageCount = reviewItems.filter((item) => item.status === 'missing_image').length;
   const errorCount = reviewItems.filter((item) => item.status === 'error').length;
 
-  const getPathMeta = (pathId: string) => {
-    const path = paths.find((item) => item.id === pathId);
-
-    return {
-      subjectName: path?.subject?.name ?? '-',
-      trailName: path?.name ?? '-',
-    };
-  };
-
   const buildReviewItems = (rows: ParsedCsvRow[], importData: ImportApiData | undefined) => {
     const errorsByRow = new Map<number, string>();
     const successIdsByRow = new Map<number, string>();
@@ -277,35 +197,21 @@ export function ImportCSVPage() {
     });
 
     const nextReviewItems: ReviewItem[] = rows.map((row) => {
-      const pathMeta = getPathMeta(row.path_id);
-
-      if (errorsByRow.has(row.rowNumber)) {
-        return {
-          id: `review-${row.rowNumber}`,
-          rowNumber: row.rowNumber,
-          title: row.text || `Linha ${row.rowNumber}`,
-          subjectName: pathMeta.subjectName,
-          trailName: pathMeta.trailName,
-          status: 'error',
-          error: errorsByRow.get(row.rowNumber),
-          csvRow: row,
-        };
-      }
+      const displayMeta = getRowDisplayMeta(row, paths);
+      const reviewStatus = resolveReviewStatus(row, paths, errorsByRow.get(row.rowNumber));
 
       return {
         id: `review-${row.rowNumber}`,
         rowNumber: row.rowNumber,
-        title: row.text || `Linha ${row.rowNumber}`,
-        subjectName: pathMeta.subjectName,
-        trailName: pathMeta.trailName,
-        status: 'missing_image',
+        title: displayMeta.title,
+        subjectName: displayMeta.subjectName,
+        trailName: displayMeta.trailName,
+        status: reviewStatus.status,
+        error: reviewStatus.error,
         csvRow: row,
         importedQuestionId: successIdsByRow.get(row.rowNumber),
       };
     });
-
-    console.log('importData', importData);
-    console.log('reviewItems', nextReviewItems);
 
     setReviewItems(nextReviewItems);
     setShowReview(true);
@@ -318,7 +224,7 @@ export function ImportCSVPage() {
       setPageSuccess('');
 
       const response = await importQuestions(file);
-      const importData = response.data as ImportApiData | undefined;
+      const importData = normalizeImportData(response);
 
       buildReviewItems(rows, importData);
     } catch (error) {
@@ -357,7 +263,7 @@ export function ImportCSVPage() {
     }
 
     try {
-      const content = await fileToText(file);
+      const content = await file.text();
       const rows = parseCsvContent(content);
 
       if (rows.length === 0) {
@@ -394,34 +300,29 @@ export function ImportCSVPage() {
       setEditingReviewItem(item);
 
       if (item.importedQuestionId) {
-        const questionResponse = await getQuestionById(item.importedQuestionId);
-
-        const question =
-          questionResponse && typeof questionResponse === 'object' && 'data' in questionResponse
-            ? questionResponse.data
-            : questionResponse;
+        const question = await getQuestionById(item.importedQuestionId);
 
         if (!question) {
           setFormMode('create');
-          setFormData(csvRowToFormData(item.csvRow));
+          setFormData(csvRowToFormData(item.csvRow, paths));
           setIsFormSheetOpen(true);
           return;
         }
 
         setFormMode('edit');
-        setFormData(questionToFormData(question));
+        setFormData(mergeQuestionWithReviewRow(question, item.csvRow, paths));
         setIsFormSheetOpen(true);
         return;
       }
 
       setFormMode('create');
-      setFormData(csvRowToFormData(item.csvRow));
+      setFormData(csvRowToFormData(item.csvRow, paths));
       setIsFormSheetOpen(true);
     } catch (error) {
       console.error('Erro ao abrir edição da questão:', error);
 
       setFormMode('create');
-      setFormData(csvRowToFormData(item.csvRow));
+      setFormData(csvRowToFormData(item.csvRow, paths));
       setIsFormSheetOpen(true);
     }
   };
@@ -448,6 +349,22 @@ export function ImportCSVPage() {
       }
 
       const hasImage = Boolean(payload.image);
+      const savedIssues: string[] = [];
+
+      if (!payload.text.trim()) {
+        savedIssues.push('Enunciado da questão não informado');
+      }
+
+      if (payload.number === null || payload.number === undefined) {
+        savedIssues.push('Ordem não informada');
+      }
+
+      const nextStatus =
+        savedIssues.length > 0
+          ? { status: 'error' as const, error: savedIssues.join('. ') }
+          : hasImage
+            ? { status: 'success' as const, error: undefined }
+            : { status: 'missing_image' as const, error: undefined };
 
       setReviewItems((previous) =>
         previous.map((item) =>
@@ -455,8 +372,10 @@ export function ImportCSVPage() {
             ? {
                 ...item,
                 importedQuestionId: savedQuestionId,
-                status: hasImage ? 'success' : 'missing_image',
-                error: undefined,
+                status: nextStatus.status,
+                error: nextStatus.error,
+                title: payload.text.split('\n\n')[0] || item.title,
+                csvRow: payloadToCsvRowPatch(item.csvRow, payload),
               }
             : item
         )
@@ -582,14 +501,17 @@ export function ImportCSVPage() {
               </div>
 
               <p className="mb-4 text-sm text-[#2445C2]">
-                O arquivo CSV deve conter as seguintes colunas na ordem:
+                O arquivo CSV deve conter as colunas abaixo (formato admin). Matéria e trilha podem
+                ser informadas por nome quando não houver path_id. A coluna <strong>number</strong>{' '}
+                é obrigatória no arquivo para revisão; a persistência no servidor depende de
+                atualização da API.
               </p>
 
               <div className="rounded-lg border border-[#C7D7FE] bg-white px-4 py-3 text-sm text-[#0F172A]">
-                path_id,exam_id,text,feedback,number,year,day,language,origin,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer
+                discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <a href="/modelo-importacao-questoes.csv" download="modelo-importacao-questoes.csv">
                   <Button
                     type="button"
@@ -598,6 +520,19 @@ export function ImportCSVPage() {
                   >
                     <Download className="h-4 w-4" />
                     Baixar Modelo CSV
+                  </Button>
+                </a>
+                <a
+                  href="/MOCK-modelo-importacao-questoes.csv"
+                  download="MOCK-modelo-importacao-questoes.csv"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 rounded-lg border-[#D8B4FE] px-4 text-[#9810FA]"
+                  >
+                    <Download className="h-4 w-4" />
+                    Baixar MOCK (10 questões)
                   </Button>
                 </a>
               </div>
@@ -678,6 +613,7 @@ export function ImportCSVPage() {
         formData={formData}
         setFormData={setFormData}
         isSubmitting={isSavingQuestion}
+        requireOrder
         onSubmit={handleSaveQuestion}
       />
     </>
