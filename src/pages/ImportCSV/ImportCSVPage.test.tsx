@@ -21,23 +21,26 @@ vi.mock('@/services/question.service', async (importOriginal) => {
   };
 });
 
-const csvHeader =
-  'path_id,exam_id,text,feedback,number,year,day,language,origin,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer';
+const adminCsvHeader =
+  'discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number';
 
-const minimalCsvRow = 'p1,e1,Questão teste,fb,1,2024,1,pt,ORIGINAL,a,b,c,d,e,A';
+const adminCsvRow = 'Matemática,Álgebra,Questão teste,a,b,c,d,e,A,Feedback,ORIGINAL,2024,1';
 
 describe('ImportCSVPage', () => {
   beforeEach(() => {
-    vi.mocked(questionService.getQuestionPaths).mockResolvedValue([]);
-    vi.mocked(questionService.importQuestions).mockResolvedValue({
-      success: true,
-      data: {
-        total: 1,
-        successCount: 1,
-        errorCount: 0,
-        results: [{ row: 2, success: true, id: 'q-imported-1' }],
+    vi.mocked(questionService.getQuestionPaths).mockResolvedValue([
+      {
+        id: 'path-algebra',
+        name: 'Álgebra',
+        subject: { id: 'sub-math', name: 'Matemática' },
       },
-    });
+    ]);
+    vi.mocked(questionService.importQuestions).mockResolvedValue({
+      total: 1,
+      successCount: 1,
+      errorCount: 0,
+      results: [{ row: 2, success: true, id: 'q-imported-1' }],
+    } as never);
   });
 
   it('deve renderizar o título e a descrição da página', () => {
@@ -64,7 +67,7 @@ describe('ImportCSVPage', () => {
     render(<ImportCSVPage />);
 
     const input = document.querySelector('#questions-import-file') as HTMLInputElement;
-    const csvContent = `${csvHeader}\n${minimalCsvRow}`;
+    const csvContent = `${adminCsvHeader}\n${adminCsvRow}`;
     const file = new File([csvContent], 'questoes.csv', { type: 'text/csv' });
 
     fireEvent.change(input, { target: { files: [file] } });
@@ -75,5 +78,7 @@ describe('ImportCSVPage', () => {
 
     expect(questionService.importQuestions).toHaveBeenCalledWith(file);
     expect(screen.getByText('Questão teste')).toBeInTheDocument();
+    expect(screen.getByText('Matemática')).toBeInTheDocument();
+    expect(screen.getByText('Álgebra')).toBeInTheDocument();
   });
 });

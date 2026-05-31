@@ -59,19 +59,70 @@ export interface QuestionsListResponse {
   totalElements: number;
 }
 
+export type AdminQuestionType = 'SIMPLIFIED' | 'ORIGINAL';
+
+export interface AdminQuestionAlternatives {
+  A: string;
+  B: string;
+  C: string;
+  D: string;
+  E: string;
+}
+
+export interface AdminQuestionApi {
+  id: string;
+  discipline: string;
+  content: string;
+  question: string;
+  alternatives?: AdminQuestionAlternatives;
+  correctAnswer?: string;
+  answerExplanation?: string;
+  type?: AdminQuestionType;
+  mockExamId?: string | null;
+  enable?: boolean;
+  year: number;
+  number?: number | null;
+  bank?: string | null;
+  createdAt?: string;
+}
+
+export interface AdminQuestion {
+  id: string;
+  discipline: string;
+  content: string;
+  question: string;
+  mockExamId: string | null;
+  enable: boolean;
+  year: number;
+  bank: string | null;
+  createdAt?: string;
+}
+
+export interface AdminQuestionsListResponse {
+  content: AdminQuestionApi[];
+  page: number;
+  size: number;
+  totalElements: number;
+}
+
 export interface QuestionsFilters {
   path_id?: string;
   exam_id?: string;
+  mockExamId?: string;
+  discipline?: string;
+  content?: string;
+  bank?: string;
   origin?: QuestionOrigin | '';
   year?: number | '';
+  enable?: 'true' | 'false';
   page?: number;
   size?: number;
 }
 
-export interface QuestionsApiResponse {
-  success: boolean;
-  data: QuestionsListResponse;
-}
+// export interface QuestionsApiResponse {
+//   success: boolean;
+//   data: QuestionsListResponse;
+// }
 
 export interface QuestionByIdApiResponse {
   success: boolean;
@@ -93,7 +144,7 @@ export interface CreateQuestionPayload {
   exam_id: string | null;
   text: string;
   feedback: string | null;
-  image: string | null;
+  image: File | string | null;
   number: number | null;
   year: number;
   day: number | null;
@@ -107,7 +158,7 @@ export interface UpdateQuestionPayload {
   exam_id: string | null;
   text: string;
   feedback: string | null;
-  image: string | null;
+  image: File | string | null;
   number: number | null;
   year: number;
   day: number | null;

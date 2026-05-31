@@ -48,11 +48,13 @@ const mockPath: QuestionPath = {
 function QuestionFormSheetHarness({
   mode = 'create',
   initialFormData = initialQuestionFormState,
+  requireOrder = false,
   onOpenChange = vi.fn(),
   onSubmit = vi.fn().mockResolvedValue(undefined) as QuestionFormOnSubmit,
 }: {
   mode?: 'create' | 'edit';
   initialFormData?: QuestionFormData;
+  requireOrder?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSubmit?: QuestionFormOnSubmit;
 }) {
@@ -65,6 +67,7 @@ function QuestionFormSheetHarness({
       mode={mode}
       formData={formData}
       setFormData={setFormData}
+      requireOrder={requireOrder}
       onSubmit={onSubmit}
     />
   );
@@ -109,11 +112,71 @@ describe('QuestionFormSheet', () => {
 
     await waitFor(() => {
       expect(screen.getAllByText('Informe o enunciado da questão.').length).toBeGreaterThan(0);
+      expect(screen.getByText('Informe o título da questão.')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Informe a ordem.')).toBeInTheDocument();
+    expect(screen.queryByText('Informe a ordem.')).not.toBeInTheDocument();
     expect(screen.getByText('Informe a alternativa A.')).toBeInTheDocument();
     expect(onSubmitMock).not.toHaveBeenCalled();
+  });
+
+  it('deve exibir aviso de ordem opcional na gestão de questões', async () => {
+    render(<QuestionFormSheetHarness />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/A ordem ainda não é salva pelo servidor/i)).toBeInTheDocument();
+    expect(screen.getByText('Ordem (opcional)')).toBeInTheDocument();
+  });
+
+  it('deve exigir ordem quando requireOrder está ativo', async () => {
+    const onSubmitMock = vi.fn();
+    render(
+      <QuestionFormSheetHarness requireOrder onSubmit={onSubmitMock as QuestionFormOnSubmit} />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar Questão' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Informe a ordem.')).toBeInTheDocument();
+    });
+  });
+
+  it('deve permitir salvar sem ordem na gestão quando os demais campos estão preenchidos', async () => {
+    const onSubmitMock = vi.fn().mockResolvedValue(undefined);
+    render(<QuestionFormSheetHarness onSubmit={onSubmitMock as QuestionFormOnSubmit} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
+    });
+
+    const comboboxes = screen.getAllByRole('combobox');
+    fireEvent.change(comboboxes[0], { target: { value: 'sub-1' } });
+    fireEvent.change(comboboxes[2], { target: { value: 'path-1' } });
+
+    fireEvent.change(screen.getByPlaceholderText('Ex: Interpretação de Texto - Machado de Assis'), {
+      target: { value: 'Título' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Digite o enunciado completo da questão...'), {
+      target: { value: 'Enunciado' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Alternativa A'), { target: { value: 'Alt A' } });
+    fireEvent.change(screen.getByPlaceholderText('Alternativa B'), { target: { value: 'Alt B' } });
+    fireEvent.change(screen.getByPlaceholderText('Alternativa C'), { target: { value: 'Alt C' } });
+    fireEvent.change(screen.getByPlaceholderText('Alternativa D'), { target: { value: 'Alt D' } });
+    fireEvent.change(screen.getByPlaceholderText('Alternativa E'), { target: { value: 'Alt E' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar Questão' }));
+
+    await waitFor(() => {
+      expect(onSubmitMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('deve chamar onSubmit com payload válido quando o formulário está preenchido', async () => {
@@ -130,6 +193,10 @@ describe('QuestionFormSheet', () => {
 
     fireEvent.change(screen.getByPlaceholderText('Ex: Interpretação de Texto - Machado de Assis'), {
       target: { value: 'Título da questão' },
+    });
+
+    fireEvent.change(screen.getByPlaceholderText('Digite o enunciado completo da questão...'), {
+      target: { value: 'Enunciado completo da questão' },
     });
 
     fireEvent.change(screen.getByPlaceholderText('12'), {
@@ -167,7 +234,7 @@ describe('QuestionFormSheet', () => {
     };
 
     expect(payload.path_id).toBe('path-1');
-    expect(payload.text).toBe('Título da questão');
+    expect(payload.text).toBe('Título da questão\n\nEnunciado completo da questão');
     expect(payload.alternatives.find((a) => a.letter === 'B')?.is_correct).toBe(true);
     expect(payload.alternatives.find((a) => a.letter === 'A')?.is_correct).toBe(false);
   });
@@ -183,6 +250,23 @@ describe('QuestionFormSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('deve preencher título e enunciado quando o texto não tem separador', async () => {
+    render(
+      <QuestionFormSheetHarness
+        initialFormData={{
+          ...initialQuestionFormState,
+          text: 'Qual civilização construiu as pirâmides de Gizé?',
+        }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByDisplayValue('Qual civilização construiu as pirâmides de Gizé?')
+      ).toHaveLength(2);
+    });
   });
 
   it('deve exibir o rótulo do botão de envio no modo edição', async () => {
