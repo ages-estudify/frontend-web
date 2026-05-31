@@ -41,7 +41,7 @@ describe('exam.service', () => {
 
     const exams = await getExams();
 
-    expect(api.get).toHaveBeenCalledWith('/admin/exams');
+    expect(api.get).toHaveBeenCalledWith('/exams');
     expect(exams).toHaveLength(1);
     expect(exams[0].id).toBe('exam-1');
   });
@@ -68,7 +68,7 @@ describe('exam.service', () => {
     expect(postSpy).toHaveBeenCalledTimes(1);
 
     const [path, body, config] = postSpy.mock.calls[0];
-    expect(path).toBe('/admin/exams/import');
+    expect(path).toBe('/exams/admin/import');
     expect(body).toBeInstanceOf(FormData);
     expect((body as FormData).get('file')).toBe(file);
     expect(config).toMatchObject({
@@ -76,7 +76,7 @@ describe('exam.service', () => {
     });
   });
 
-  it('updateExam só envia campos preenchidos no FormData', async () => {
+  it('updateExam só envia campos preenchidos e converte imagem para Base64', async () => {
     const putSpy = vi.spyOn(api, 'put').mockResolvedValue({
       success: true,
       data: {
@@ -93,11 +93,12 @@ describe('exam.service', () => {
 
     expect(putSpy).toHaveBeenCalledTimes(1);
     const [path, body] = putSpy.mock.calls[0];
-    expect(path).toBe('/admin/exams/exam-1');
-    const formData = body as FormData;
-    expect(formData.get('title')).toBe('Novo título');
-    expect(formData.get('image')).toBe(image);
-    expect(formData.get('origin')).toBeNull();
+    expect(path).toBe('/exams/admin/exam-1');
+    expect(body).toEqual(expect.objectContaining({ title: 'Novo título' }));
+    expect(body).not.toBeInstanceOf(FormData);
+    expect(typeof (body as Record<string, unknown>).image).toBe('string');
+    expect((body as Record<string, unknown>).image as string).toMatch(/^data:image\/png;base64,/);
+    expect((body as Record<string, unknown>).origin).toBeUndefined();
   });
 
   it('deleteExam chama DELETE em /admin/exams/:id', async () => {
@@ -105,7 +106,7 @@ describe('exam.service', () => {
 
     await deleteExam('exam-1');
 
-    expect(deleteSpy).toHaveBeenCalledWith('/admin/exams/exam-1');
+    expect(deleteSpy).toHaveBeenCalledWith('/exams/admin/exam-1');
   });
 
   it('updateExam suporta envio só de origin sem image', async () => {
@@ -123,10 +124,7 @@ describe('exam.service', () => {
     await updateExam('exam-1', { origin: 'UFRGS' });
 
     const [, body] = putSpy.mock.calls[0];
-    const formData = body as FormData;
-    expect(formData.get('origin')).toBe('UFRGS');
-    expect(formData.get('title')).toBeNull();
-    expect(formData.get('image')).toBeNull();
+    expect(body).toEqual({ origin: 'UFRGS' });
   });
 
   it('propaga erro quando getExams falha', async () => {

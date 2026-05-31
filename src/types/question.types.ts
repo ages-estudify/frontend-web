@@ -144,7 +144,7 @@ export interface CreateQuestionPayload {
   exam_id: string | null;
   text: string;
   feedback: string | null;
-  image: string | null;
+  image: File | string | null;
   number: number | null;
   year: number;
   day: number | null;
@@ -158,7 +158,7 @@ export interface UpdateQuestionPayload {
   exam_id: string | null;
   text: string;
   feedback: string | null;
-  image: string | null;
+  image: File | string | null;
   number: number | null;
   year: number;
   day: number | null;

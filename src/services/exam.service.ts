@@ -1,4 +1,5 @@
 import api, { handleApiError } from './api';
+import { readFileAsBase64 } from '@/utils/file.utils';
 import type {
   ExamListItem,
   ExamsApiResponse,
@@ -7,7 +8,7 @@ import type {
   UpdateExamResponse,
 } from '@/types/exam.types';
 
-const EXAMS_BASE_PATH = '/admin/exams';
+const EXAMS_BASE_PATH = '/exams';
 
 /** Simulados excluídos (soft delete) voltam da API com status ARCHIVED — ocultamos no front. */
 export const getExams = async (): Promise<ExamListItem[]> => {
@@ -25,7 +26,7 @@ export const importExam = async (file: File): Promise<ImportExamResponse> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    return (await api.post(`${EXAMS_BASE_PATH}/import`, formData, {
+    return (await api.post(`${EXAMS_BASE_PATH}/admin/import`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -40,25 +41,25 @@ export const updateExam = async (
   payload: UpdateExamPayload
 ): Promise<UpdateExamResponse> => {
   try {
-    const formData = new FormData();
+    const body: Record<string, unknown> = {};
 
     if (payload.title !== undefined) {
-      formData.append('title', payload.title);
+      body.title = payload.title;
     }
 
     if (payload.origin !== undefined) {
-      formData.append('origin', payload.origin);
+      body.origin = payload.origin;
     }
 
-    if (payload.image) {
-      formData.append('image', payload.image);
+    if (payload.image !== undefined && payload.image !== null) {
+      if (payload.image instanceof File) {
+        body.image = await readFileAsBase64(payload.image);
+      } else {
+        body.image = payload.image;
+      }
     }
 
-    return (await api.put(`${EXAMS_BASE_PATH}/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })) as UpdateExamResponse;
+    return (await api.put(`${EXAMS_BASE_PATH}/admin/${id}`, body)) as UpdateExamResponse;
   } catch (error) {
     return handleApiError(error);
   }
@@ -66,7 +67,7 @@ export const updateExam = async (
 
 export const deleteExam = async (id: string): Promise<void> => {
   try {
-    await api.delete(`${EXAMS_BASE_PATH}/${id}`);
+    await api.delete(`${EXAMS_BASE_PATH}/admin/${id}`);
   } catch (error) {
     return handleApiError(error);
   }

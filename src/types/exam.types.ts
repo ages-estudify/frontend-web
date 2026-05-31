@@ -22,7 +22,7 @@ export interface ExamsApiResponse {
 export interface UpdateExamPayload {
   title?: string;
   origin?: string;
-  image?: File | null;
+  image?: File | string | null;
 }
 
 export interface UpdateExamResponse {
