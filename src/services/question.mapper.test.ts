@@ -116,6 +116,7 @@ describe('question.mapper', () => {
       correctAnswer: 'B',
       type: originToAdminType('ORIGINAL'),
       pathId: 'path-1',
+      number: 1,
     });
   });
 

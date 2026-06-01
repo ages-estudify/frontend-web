@@ -161,6 +161,7 @@ export function buildAdminCreatePayload(
     year: payload.year,
     pathId: path.id,
     mockExamId: payload.exam_id || undefined,
+    number: payload.number,
   };
 }
 
@@ -186,5 +187,6 @@ export function buildAdminUpdatePayload(
     pathId: path.id,
     mockExamId: payload.exam_id || null,
     enable: payload.enable,
+    number: payload.number,
   };
 }

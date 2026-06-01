@@ -23,7 +23,7 @@ type QuestionFormSheetProps = {
   setFormData: React.Dispatch<React.SetStateAction<QuestionFormData>>;
   isSubmitting?: boolean;
   submitError?: string;
-  /** Na revisão de import CSV a ordem é obrigatória; na gestão é opcional (API ainda não persiste). */
+  /** Na revisão de import CSV a ordem é obrigatória. */
   requireOrder?: boolean;
   onSubmit: (payload: CreateQuestionPayload | UpdateQuestionPayload) => Promise<void> | void;
 };
@@ -348,13 +348,6 @@ export function QuestionFormSheet({
                   {submitError}
                 </p>
               )}
-
-              {!requireOrder ? (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  A ordem ainda não é salva pelo servidor. Você pode preencher para se organizar,
-                  mas ao reabrir a questão o campo pode aparecer vazio.
-                </p>
-              ) : null}
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField label="Título da Questão *" error={errors.title}>

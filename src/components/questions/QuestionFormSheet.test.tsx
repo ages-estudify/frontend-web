@@ -120,17 +120,6 @@ describe('QuestionFormSheet', () => {
     expect(onSubmitMock).not.toHaveBeenCalled();
   });
 
-  it('deve exibir aviso de ordem opcional na gestão de questões', async () => {
-    render(<QuestionFormSheetHarness />);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
-    });
-
-    expect(screen.getByText(/A ordem ainda não é salva pelo servidor/i)).toBeInTheDocument();
-    expect(screen.getByText('Ordem (opcional)')).toBeInTheDocument();
-  });
-
   it('deve exigir ordem quando requireOrder está ativo', async () => {
     const onSubmitMock = vi.fn();
     render(
