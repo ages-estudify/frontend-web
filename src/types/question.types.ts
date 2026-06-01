@@ -84,6 +84,9 @@ export interface AdminQuestionApi {
   number?: number | null;
   bank?: string | null;
   createdAt?: string;
+  image?: string | null;
+  imageUrl?: string | null;
+  image_url?: string | null;
 }
 
 export interface AdminQuestion {

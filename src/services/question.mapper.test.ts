@@ -43,6 +43,49 @@ describe('question.mapper', () => {
     expect(mapped.path.subject.name).toBe('Matemática');
   });
 
+  it('mapeia image, imageUrl e image_url da API admin', () => {
+    const withImage = mapAdminQuestionToQuestion(
+      {
+        id: 'q-img',
+        discipline: 'Matemática',
+        content: 'Álgebra',
+        question: 'Com imagem',
+        year: 2024,
+        imageUrl: 'https://cdn.example.com/q.png',
+      },
+      [mockPath]
+    );
+
+    expect(withImage.image).toBe('https://cdn.example.com/q.png');
+
+    const withSnakeCase = mapAdminQuestionToQuestion(
+      {
+        id: 'q-img-2',
+        discipline: 'Matemática',
+        content: 'Álgebra',
+        question: 'Com imagem snake',
+        year: 2024,
+        image_url: 'https://cdn.example.com/q2.png',
+      },
+      [mockPath]
+    );
+
+    expect(withSnakeCase.image).toBe('https://cdn.example.com/q2.png');
+
+    const withoutImage = mapAdminQuestionToQuestion(
+      {
+        id: 'q-no-img',
+        discipline: 'Matemática',
+        content: 'Álgebra',
+        question: 'Sem imagem',
+        year: 2024,
+      },
+      [mockPath]
+    );
+
+    expect(withoutImage.image).toBeNull();
+  });
+
   it('monta payload admin no create', () => {
     const payload: CreateQuestionPayload = {
       path_id: 'path-1',

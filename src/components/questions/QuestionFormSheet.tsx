@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ImageUp } from 'lucide-react';
+import { ImageUp, X } from 'lucide-react';
 
 import { splitQuestionText, joinQuestionText } from '@/components/questions/question-text.utils';
 import { Button } from '@/components/ui/button';
@@ -49,10 +49,12 @@ export function QuestionFormSheet({
   const [isLoadingPaths, setIsLoadingPaths] = React.useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = React.useState('');
   const [selectedFileName, setSelectedFileName] = React.useState('');
+  const [isDraggingImage, setIsDraggingImage] = React.useState(false);
   const [questionTitle, setQuestionTitle] = React.useState('');
   const [questionStatement, setQuestionStatement] = React.useState('');
 
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const imagePreviewUrl = formData.image.trim() || null;
 
   const title = mode === 'create' ? 'Nova Questão' : 'Editar Questão';
 
@@ -161,9 +163,8 @@ export function QuestionFormSheet({
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processImageFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) return;
 
     try {
       const base64 = await fileToBase64(file);
@@ -171,6 +172,43 @@ export function QuestionFormSheet({
       setSelectedFileName(file.name);
     } catch (error) {
       console.error('Erro ao carregar imagem:', error);
+    }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    await processImageFile(file);
+    event.target.value = '';
+  };
+
+  const handleDragOverImage = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingImage(true);
+  };
+
+  const handleDragLeaveImage = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingImage(false);
+  };
+
+  const handleDropImage = async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDraggingImage(false);
+
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+
+    await processImageFile(file);
+  };
+
+  const handleRemoveImage = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    updateField('image', '');
+    setSelectedFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -284,6 +322,7 @@ export function QuestionFormSheet({
     if (!nextOpen) {
       setErrors({});
       setSelectedFileName('');
+      setIsDraggingImage(false);
       setQuestionTitle('');
       setQuestionStatement('');
     }
@@ -412,39 +451,100 @@ export function QuestionFormSheet({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Imagem</label>
 
-                <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={handleChooseFile}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleChooseFile();
+                    }
+                  }}
+                  onDragOver={handleDragOverImage}
+                  onDragLeave={handleDragLeaveImage}
+                  onDrop={handleDropImage}
+                  className={`cursor-pointer rounded-xl border-2 border-dashed p-5 transition-colors ${
+                    isDraggingImage
+                      ? 'border-[var(--input-focus)] bg-[var(--input-focus)]/5'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    aria-label="Selecionar imagem da questão"
                     onChange={handleFileChange}
                     className="hidden"
                   />
 
-                  <div className="flex min-h-[190px] flex-col items-center justify-center rounded-xl px-6 text-center">
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                      <ImageUp size={34} />
+                  {imagePreviewUrl ? (
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      <div className="relative w-full">
+                        <img
+                          src={imagePreviewUrl}
+                          alt="Preview da imagem da questão"
+                          className="max-h-[220px] w-full rounded-lg object-contain"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Remover imagem"
+                          onClick={handleRemoveImage}
+                          className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border-0 bg-black/60 p-0 text-white transition hover:bg-black/80"
+                        >
+                          <X className="size-4 shrink-0" strokeWidth={2.5} />
+                        </button>
+                      </div>
+
+                      <div>
+                        <p className="text-base font-semibold text-gray-800">
+                          {selectedFileName || 'Imagem selecionada'}
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Arraste outra imagem ou clique para substituir
+                        </p>
+                      </div>
+
+                      <Button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleChooseFile();
+                        }}
+                        className="h-10 rounded-lg px-4 text-sm font-medium text-white hover:opacity-90"
+                        style={{ backgroundColor: colors.buttonQuestion }}
+                      >
+                        Selecionar Arquivo
+                      </Button>
                     </div>
+                  ) : (
+                    <div className="flex min-h-[190px] flex-col items-center justify-center rounded-xl px-6 text-center">
+                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                        <ImageUp size={34} />
+                      </div>
 
-                    <p className="text-base font-semibold text-gray-800">Arraste sua imagem aqui</p>
+                      <p className="text-base font-semibold text-gray-800">
+                        Arraste sua imagem aqui
+                      </p>
 
-                    <p className="mt-2 text-sm text-gray-500">
-                      ou clique para selecionar um arquivo
-                    </p>
+                      <p className="mt-2 text-sm text-gray-500">
+                        ou clique para selecionar um arquivo
+                      </p>
 
-                    <Button
-                      type="button"
-                      onClick={handleChooseFile}
-                      className="mt-4 h-10 rounded-lg px-4 text-sm font-medium text-white hover:opacity-90"
-                      style={{ backgroundColor: colors.buttonQuestion }}
-                    >
-                      Selecionar Arquivo
-                    </Button>
-
-                    {selectedFileName && (
-                      <p className="mt-3 text-sm font-medium text-gray-600">{selectedFileName}</p>
-                    )}
-                  </div>
+                      <Button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleChooseFile();
+                        }}
+                        className="mt-4 h-10 rounded-lg px-4 text-sm font-medium text-white hover:opacity-90"
+                        style={{ backgroundColor: colors.buttonQuestion }}
+                      >
+                        Selecionar Arquivo
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 

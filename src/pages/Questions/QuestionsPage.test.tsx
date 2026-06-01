@@ -88,6 +88,38 @@ describe('QuestionsPage', () => {
     expect(within(table).getByText('Trilha Alpha')).toBeInTheDocument();
   });
 
+  it('deve exibir ícone verde na coluna imagem quando a questão tem imagem', async () => {
+    vi.mocked(questionService.getQuestions).mockResolvedValue({
+      content: [
+        mockQuestion,
+        {
+          ...mockQuestion,
+          id: 'q2',
+          text: 'Questão com imagem',
+          image: 'https://cdn.example.com/questao.png',
+        },
+      ],
+      page: 0,
+      size: 100,
+      totalElements: 2,
+    });
+
+    render(<QuestionsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Questão com imagem')).toBeInTheDocument();
+    });
+
+    const table = screen.getByRole('table');
+    const imageIcons = Array.from(table.querySelectorAll('tbody svg')).filter(
+      (svg) => svg.classList.contains('text-[#94A3B8]') || svg.classList.contains('text-[#65A30D]')
+    );
+
+    expect(imageIcons).toHaveLength(2);
+    expect(imageIcons.some((icon) => icon.classList.contains('text-[#65A30D]'))).toBe(true);
+    expect(imageIcons.some((icon) => icon.classList.contains('text-[#94A3B8]'))).toBe(true);
+  });
+
   it('deve exibir mensagem quando não há questões habilitadas', async () => {
     vi.mocked(questionService.getQuestions).mockResolvedValue({
       content: [],

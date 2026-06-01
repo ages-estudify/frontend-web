@@ -293,4 +293,83 @@ describe('QuestionFormSheet', () => {
 
     expect(screen.getByRole('button', { name: 'Salvar Alterações' })).toBeInTheDocument();
   });
+
+  it('deve exibir preview quando a questão já possui imagem', async () => {
+    render(
+      <QuestionFormSheetHarness
+        mode="edit"
+        initialFormData={{
+          ...initialQuestionFormState,
+          image: 'https://cdn.example.com/questao.png',
+        }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
+    });
+
+    const preview = screen.getByRole('img', { name: 'Preview da imagem da questão' });
+    expect(preview).toHaveAttribute('src', 'https://cdn.example.com/questao.png');
+    expect(screen.getByText('Imagem selecionada')).toBeInTheDocument();
+  });
+
+  it('deve aceitar drop de imagem na área de upload', async () => {
+    const readAsDataURL = vi.fn(function (this: FileReader) {
+      Object.defineProperty(this, 'result', {
+        configurable: true,
+        value: 'data:image/png;base64,ZmFrZQ==',
+      });
+      this.onload?.({} as ProgressEvent<FileReader>);
+    });
+
+    vi.spyOn(window, 'FileReader').mockImplementation(function () {
+      return { readAsDataURL, onload: null, onerror: null } as unknown as FileReader;
+    });
+
+    render(<QuestionFormSheetHarness />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
+    });
+
+    const imageFile = new File(['conteudo'], 'questao.png', { type: 'image/png' });
+    const dropZone = screen.getByText('Arraste sua imagem aqui').closest('[role="button"]')!;
+
+    fireEvent.drop(dropZone, {
+      dataTransfer: { files: [imageFile] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: 'Preview da imagem da questão' })).toHaveAttribute(
+        'src',
+        'data:image/png;base64,ZmFrZQ=='
+      );
+    });
+
+    expect(screen.getByText('questao.png')).toBeInTheDocument();
+  });
+
+  it('deve remover a imagem ao clicar no botão de fechar', async () => {
+    render(
+      <QuestionFormSheetHarness
+        mode="edit"
+        initialFormData={{
+          ...initialQuestionFormState,
+          image: 'https://cdn.example.com/questao.png',
+        }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Carregando matérias...')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remover imagem' }));
+
+    expect(
+      screen.queryByRole('img', { name: 'Preview da imagem da questão' })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Arraste sua imagem aqui')).toBeInTheDocument();
+  });
 });

@@ -366,8 +366,9 @@ export function QuestionsPage() {
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-center">
                           <ImageIcon
-                            className={`h-4 w-4 ${
-                              question.image ? 'text-[#65A30D]' : 'text-[#94A3B8]'
+                            aria-hidden
+                            className={`h-4 w-4 stroke-current ${
+                              question.image?.trim() ? 'text-[#65A30D]' : 'text-[#94A3B8]'
                             }`}
                           />
                         </div>

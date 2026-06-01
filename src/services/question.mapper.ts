@@ -87,6 +87,17 @@ function getCorrectAnswerLetter(alternatives: CreateQuestionPayload['alternative
   return alternatives.find((alternative) => alternative.is_correct)?.letter ?? 'A';
 }
 
+function resolveAdminQuestionImage(
+  admin: Pick<AdminQuestionApi, 'image' | 'imageUrl' | 'image_url'>
+): string | null {
+  const value = admin.image ?? admin.imageUrl ?? admin.image_url;
+
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export function mapAdminQuestionToQuestion(
   admin: AdminQuestionApi,
   paths: QuestionPath[]
@@ -119,7 +130,7 @@ export function mapAdminQuestionToQuestion(
     day: null,
     number: admin.number ?? null,
     language: null,
-    image: null,
+    image: resolveAdminQuestionImage(admin),
     enable: admin.enable ?? true,
     path_id: matchedPath?.id ?? '',
     exam_id: admin.mockExamId ?? null,
