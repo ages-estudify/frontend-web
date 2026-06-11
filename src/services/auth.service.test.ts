@@ -47,10 +47,17 @@ describe('auth.service', () => {
   });
 
   it('deve registrar usuário e retornar dados da API', async () => {
+    const planExpirationDate = new Date();
     vi.spyOn(api, 'post').mockResolvedValue({
       data: {
-        token: 'jwt-token',
-        role: 'USER',
+        sucess: true,
+        data: {
+          userId: 'user-1',
+          token: 'jwt-token',
+          refreshToken: 'refresh-token',
+          role: 'USER',
+          planExpirationDate,
+        },
       },
     });
 
@@ -62,7 +69,7 @@ describe('auth.service', () => {
       password: '123456',
     });
 
-    expect(result.token).toBe('jwt-token');
-    expect(result.role).toBe('USER');
+    expect(result.data.token).toBe('jwt-token');
+    expect(result.data.role).toBe('USER');
   });
 });

@@ -10,7 +10,7 @@ describe('readFileAsBase64', () => {
 
   it('rejeita quando FileReader retorna valor inválido', async () => {
     const file = new File(['conteudo'], 'arquivo.txt', { type: 'text/plain' });
-    const original = global.FileReader;
+    const original = globalThis.FileReader;
 
     class InvalidResultReader {
       result: ArrayBuffer | null = null;
@@ -22,12 +22,12 @@ describe('readFileAsBase64', () => {
       }
     }
 
-    global.FileReader = InvalidResultReader as unknown as typeof FileReader;
+    globalThis.FileReader = InvalidResultReader as unknown as typeof FileReader;
 
     try {
       await expect(readFileAsBase64(file)).rejects.toThrow('Falha ao ler arquivo');
     } finally {
-      global.FileReader = original;
+      globalThis.FileReader = original;
     }
   });
 });
