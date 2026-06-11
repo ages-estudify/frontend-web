@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { login } from '@/services/auth.service';
+import { login, register } from '@/services/auth.service';
 import api from '@/services/api';
 
 describe('auth.service', () => {
@@ -44,5 +44,25 @@ describe('auth.service', () => {
     await expect(login({ email: 'admin@test.com', password: 'errado' })).rejects.toThrow(
       'Não foi possível realizar login. Tente novamente.'
     );
+  });
+
+  it('deve registrar usuário e retornar dados da API', async () => {
+    vi.spyOn(api, 'post').mockResolvedValue({
+      data: {
+        token: 'jwt-token',
+        role: 'USER',
+      },
+    });
+
+    const result = await register({
+      fullName: 'Admin',
+      email: 'admin@test.com',
+      birthDate: '2000-01-01',
+      phone: '11999999999',
+      password: '123456',
+    });
+
+    expect(result.token).toBe('jwt-token');
+    expect(result.role).toBe('USER');
   });
 });

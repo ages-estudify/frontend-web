@@ -12,7 +12,11 @@
     "prepare": "husky",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --coverage",
+    "test:structure": "node scripts/check-test-structure.mjs",
+    "test:changed": "node scripts/check-changed-files-have-tests.mjs",
+    "test:coverage:summary": "node scripts/print-coverage-summary.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

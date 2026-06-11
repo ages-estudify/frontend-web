@@ -33,8 +33,9 @@
 
 ## Testes
 
-- [ ] Testes relevantes (`*.test.tsx`) foram criados/atualizados com Vitest e React Testing Library (quando aplicável).
-- [ ] O comando `npm run test:run` passa com sucesso.
+- [ ] Testes co-localizados (`*.test.tsx`) foram criados/atualizados para componentes, hooks, páginas e serviços alterados.
+- [ ] O comando `npm run test:ci` passa com sucesso (inclui cobertura mínima de 80%).
+- [ ] Se algum arquivo ficou sem teste, há waiver aprovado em `.github/test-waivers.txt` ou `[test-waiver:path]` na descrição do PR.
 
 ## Checklist Geral
 

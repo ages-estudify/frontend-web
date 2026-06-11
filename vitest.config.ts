@@ -5,6 +5,21 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const coverageInclude = [
+  'src/App.tsx',
+  'src/components/examsCards.tsx',
+  'src/components/app-sidebar.tsx',
+  'src/components/exams/**/*.{ts,tsx}',
+  'src/components/login/**/*.{ts,tsx}',
+  'src/pages/ExamsPage.tsx',
+  'src/pages/LoginPage.tsx',
+  'src/services/auth.service.ts',
+  'src/services/exam.service.ts',
+  'src/utils/storage.ts',
+  'src/utils/file.utils.ts',
+  'src/utils/api-error.ts',
+];
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -15,7 +30,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./test/setup.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     server: {
       deps: {
         inline: ['react-router', 'react-router-dom'],
@@ -23,14 +39,10 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
-      include: [
-        'src/pages/ExamsPage.tsx',
-        'src/components/exams/**/*.{ts,tsx}',
-        'src/components/examsCards.tsx',
-        'src/services/exam.service.ts',
-      ],
-      exclude: ['**/*.test.{ts,tsx}'],
+      reportsDirectory: './coverage',
+      reporter: ['text', 'html', 'json-summary'],
+      include: coverageInclude,
+      exclude: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
       thresholds: {
         lines: 80,
         functions: 80,
