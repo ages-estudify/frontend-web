@@ -46,7 +46,7 @@ export function TrailCard({
 }: TrailCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasImageError, setHasImageError] = useState(false);
-  const shouldShowImage = iconUrl.trim().length > 0 && !hasImageError;
+  const shouldShowImage = iconUrl?.trim().length > 0 && !hasImageError;
   const questionsCountLabel = questionsLoaded
     ? `${questions.length} ${questions.length === 1 ? 'questão' : 'questões'}`
     : 'Questões: —';
