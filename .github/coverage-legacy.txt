@@ -1,0 +1,5 @@
+# Legacy files excluded from the 80% coverage gate until dedicated tests land.
+# Requires tech lead approval to add new entries.
+#
+# The active coverage scope is defined in vitest.config.ts (coverageInclude).
+# Files outside that scope are not counted toward the threshold.
