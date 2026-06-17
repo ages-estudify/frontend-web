@@ -26,9 +26,12 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: [
         'src/pages/ExamsPage.tsx',
+        'src/pages/Trails/TrailsPage.tsx',
         'src/components/exams/**/*.{ts,tsx}',
         'src/components/examsCards.tsx',
+        'src/components/trails/**/*.{ts,tsx}',
         'src/services/exam.service.ts',
+        'src/services/trail.service.ts',
       ],
       exclude: ['**/*.test.{ts,tsx}'],
       thresholds: {

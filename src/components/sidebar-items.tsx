@@ -7,7 +7,7 @@ export const navItems = [
     icon: Home,
   },
   {
-    title: 'Trilha',
+    title: 'Trilhas',
     url: '/trilha',
     icon: Route,
   },
