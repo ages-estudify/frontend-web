@@ -40,7 +40,7 @@ Matemática,Álgebra,Qual é o valor de x?,1,2,3,4,5,C,Explicação,ORIGINAL,202
       text: 'Qual é o valor de x?',
       feedback: 'Explicação',
       correct_answer: 'C',
-      origin: 'ORIGINAL',
+      origin: 'EXTERNAL',
     });
   });
 

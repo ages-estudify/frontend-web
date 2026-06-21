@@ -358,8 +358,8 @@ export function QuestionFormSheet({
                     }
                     className={inputClassName(false)}
                   >
-                    <option value="ORIGINAL">ORIGINAL</option>
-                    <option value="EXTERNAL">EXTERNAL</option>
+                    <option value="ORIGINAL">Original</option>
+                    <option value="EXTERNAL">Simplificada</option>
                   </select>
                 </FormField>
 

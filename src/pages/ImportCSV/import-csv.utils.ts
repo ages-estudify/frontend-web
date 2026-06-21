@@ -85,7 +85,7 @@ function parseCsvLine(line: string) {
 }
 
 function adminTypeToOrigin(type: string): QuestionOrigin {
-  return type.trim().toUpperCase() === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL';
+  return type.trim().toUpperCase() === 'SIMPLIFIED' ? 'ORIGINAL' : 'EXTERNAL';
 }
 
 const TRUTHY_HAS_IMAGE = new Set(['true', '1', 'sim', 'yes']);
