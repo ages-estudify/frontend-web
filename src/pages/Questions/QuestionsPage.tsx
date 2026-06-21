@@ -16,6 +16,7 @@ import type {
   CreateQuestionPayload,
   Question,
   QuestionFormData,
+  QuestionOrigin,
   QuestionPath,
   UpdateQuestionPayload,
 } from '@/types/question.types';
