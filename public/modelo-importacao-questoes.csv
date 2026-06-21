@@ -1,4 +1,4 @@
-subject,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number
-Biologia,Genética,Qual é o objeto de estudo da genética?,Hereditariedade e genes,Movimento dos corpos,Ligações químicas,Ondas sonoras,Reações térmicas,A,Reveja os conceitos básicos de genética.,ORIGINAL,2024,1
-Química,Química Orgânica,Qual é a principal característica da química orgânica?,Estudo dos metais,Estudo dos compostos de carbono,Estudo dos gases nobres,Estudo das rochas,Estudo da luz,B,Reveja os compostos de carbono.,ORIGINAL,2024,2
-Química,Termoquímica,O que a termoquímica estuda?,Movimento dos corpos,Velocidade das ondas,Calor envolvido nas reações químicas,Campos magnéticos,Formação das rochas,C,Reveja os conceitos de calor nas reações.,ORIGINAL,2024,3
+subject,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number,has_image
+Biologia,Genética,Qual é o objeto de estudo da genética?,Hereditariedade e genes,Movimento dos corpos,Ligações químicas,Ondas sonoras,Reações térmicas,A,Reveja os conceitos básicos de genética.,ORIGINAL,2024,1,false
+Química,Química Orgânica,Qual é a principal característica da química orgânica?,Estudo dos metais,Estudo dos compostos de carbono,Estudo dos gases nobres,Estudo das rochas,Estudo da luz,B,Reveja os compostos de carbono.,ORIGINAL,2024,2,false
+Química,Termoquímica,O que a termoquímica estuda?,Movimento dos corpos,Velocidade das ondas,Calor envolvido nas reações químicas,Campos magnéticos,Formação das rochas,C,Reveja os conceitos de calor nas reações.,ORIGINAL,2024,3,true

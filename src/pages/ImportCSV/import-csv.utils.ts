@@ -20,6 +20,7 @@ export type ParsedCsvRow = {
   alternative_d: string;
   alternative_e: string;
   correct_answer: string;
+  has_image: boolean;
 };
 
 export type ImportApiResult = {
@@ -87,6 +88,11 @@ function adminTypeToOrigin(type: string): QuestionOrigin {
   return type.trim().toUpperCase() === 'SIMPLIFIED' ? 'EXTERNAL' : 'ORIGINAL';
 }
 
+const TRUTHY_HAS_IMAGE = new Set(['true', '1', 'sim', 'yes']);
+function parseHasImage(value: string): boolean {
+  return TRUTHY_HAS_IMAGE.has(value.trim().toLowerCase());
+}
+
 export function parseCsvContent(content: string): ParsedCsvRow[] {
   const lines = content
     .split(/\r?\n/)
@@ -96,7 +102,8 @@ export function parseCsvContent(content: string): ParsedCsvRow[] {
   if (lines.length <= 1) return [];
 
   const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase());
-  const isAdminFormat = headers.includes('question') && headers.includes('discipline');
+  const isAdminFormat =
+    headers.includes('question') && (headers.includes('discipline') || headers.includes('subject'));
 
   return lines.slice(1).map((line, index) => {
     const values = parseCsvLine(line);
@@ -133,6 +140,7 @@ export function parseCsvContent(content: string): ParsedCsvRow[] {
         alternative_d: getValue('alternative_d'),
         alternative_e: getValue('alternative_e'),
         correct_answer: getValue('correct_answer'),
+        has_image: parseHasImage(getValue('has_image')),
       };
     }
 
@@ -156,6 +164,7 @@ export function parseCsvContent(content: string): ParsedCsvRow[] {
       alternative_d: getValue('alternative_d'),
       alternative_e: getValue('alternative_e'),
       correct_answer: getValue('correct_answer'),
+      has_image: parseHasImage(getValue('has_image')),
     };
   });
 }
@@ -207,10 +216,15 @@ export function getRowValidationIssues(row: ParsedCsvRow, paths: QuestionPath[])
 export function resolveReviewStatus(
   row: ParsedCsvRow,
   paths: QuestionPath[],
-  apiError?: string
+  apiError?: string,
+  importedSuccessfully = false
 ): { status: ReviewStatus; error?: string } {
   if (apiError) {
     return { status: 'error', error: apiError };
+  }
+
+  if (importedSuccessfully) {
+    return { status: row.has_image ? 'missing_image' : 'success' };
   }
 
   const validationIssues = getRowValidationIssues(row, paths);
@@ -219,7 +233,7 @@ export function resolveReviewStatus(
     return { status: 'error', error: validationIssues.join('. ') };
   }
 
-  return { status: 'missing_image' };
+  return { status: row.has_image ? 'missing_image' : 'success' };
 }
 
 export function getRowDisplayMeta(row: ParsedCsvRow, paths: QuestionPath[]) {
