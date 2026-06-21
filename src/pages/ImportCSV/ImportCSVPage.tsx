@@ -147,6 +147,7 @@ function payloadToCsvRowPatch(
 
 export function ImportCSVPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [showReview, setShowReview] = useState(false);
   const [, setIsSubmitting] = useState(false);
@@ -241,9 +242,7 @@ export function ImportCSVPage() {
     }
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
-
+  const processSelectedFile = async (file: File | null) => {
     setPageError('');
     setPageSuccess('');
 
@@ -286,6 +285,26 @@ export function ImportCSVPage() {
           : 'Não foi possível ler o arquivo CSV.'
       );
     }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    void processSelectedFile(event.target.files?.[0] ?? null);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    void processSelectedFile(event.dataTransfer.files?.[0] ?? null);
   };
 
   const handleRemoveFile = () => {
@@ -464,7 +483,12 @@ export function ImportCSVPage() {
             <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
               <label
                 htmlFor="questions-import-file"
-                className="flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#CBD5E1] bg-[#FAFAFA] px-6 text-center"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-6 text-center transition-colors ${
+                  isDragging ? 'border-[#9810FA] bg-[#F6EEFE]' : 'border-[#CBD5E1] bg-[#FAFAFA]'
+                }`}
               >
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F5F9] text-[#98A2B3]">
                   <Upload className="h-8 w-8" />
