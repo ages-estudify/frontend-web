@@ -501,14 +501,14 @@ export function ImportCSVPage() {
               </div>
 
               <p className="mb-4 text-sm text-[#2445C2]">
-                O arquivo CSV deve conter as colunas abaixo (formato admin). Matéria e trilha podem
-                ser informadas por nome quando não houver path_id. A coluna <strong>number</strong>{' '}
-                é obrigatória no arquivo para revisão; a persistência no servidor depende de
-                atualização da API.
+                O arquivo CSV deve conter as colunas abaixo (formato admin). A matéria (
+                <strong>subject</strong>) e a trilha (<strong>content</strong>) são informadas por
+                nome. A coluna <strong>number</strong> é obrigatória no arquivo para revisão; a
+                persistência no servidor depende de atualização da API.
               </p>
 
               <div className="rounded-lg border border-[#C7D7FE] bg-white px-4 py-3 text-sm text-[#0F172A]">
-                discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number
+                subject,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3">
