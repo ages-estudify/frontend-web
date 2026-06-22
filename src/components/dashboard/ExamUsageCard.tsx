@@ -1,5 +1,7 @@
 import { useId, useMemo, useState } from 'react';
 
+import { formatDuration } from '@/utils/format-duration';
+
 type ExamUsageSeriesItem = {
   weekStart: string;
   averageTimeSeconds: number;
@@ -20,19 +22,6 @@ function formatWeekDate(date: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(date));
-}
-
-function formatSecondsToHours(seconds: number) {
-  const totalMinutes = Math.round(seconds / 60);
-
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours === 0) {
-    return `${minutes}m`;
-  }
-
-  return `${hours}h ${minutes}m`;
 }
 
 function createSmoothPath(points: { x: number; y: number }[]) {
@@ -115,7 +104,7 @@ export function ExamUsageCard({ examUsage }: ExamUsageCardProps) {
     <section className="w-full rounded-[24px] bg-white px-7 py-7">
       <div>
         <strong className="text-[28px] font-bold leading-none text-black">
-          {formatSecondsToHours(examUsage.averageTimeSeconds)}
+          {formatDuration(examUsage.averageTimeSeconds)}
         </strong>
 
         <p className="mt-2 text-lg font-medium text-[#4F4F4F]">Tempo médio em simulados</p>
@@ -183,7 +172,7 @@ export function ExamUsageCard({ examUsage }: ExamUsageCardProps) {
                 }}
               >
                 <p className="font-semibold">{formatWeekDate(hoveredPoint.label)}</p>
-                <p className="mt-0.5 text-[#CFCFCF]">{formatSecondsToHours(hoveredPoint.value)}</p>
+                <p className="mt-0.5 text-[#CFCFCF]">{formatDuration(hoveredPoint.value)}</p>
               </div>
             )}
           </>

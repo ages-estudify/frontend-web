@@ -44,7 +44,7 @@ export function DashboardPage() {
   const plans = useMemo(() => (dashboard ? mapPlans(dashboard.plans) : []), [dashboard]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex min-w-0 flex-col gap-8">
       <Title title="Dashboard" subtitle="Acompanhe as principais métricas do app" />
 
       {isLoading ? (
@@ -53,7 +53,7 @@ export function DashboardPage() {
         <p className="text-sm text-red-600">{error || 'Erro ao carregar dashboard.'}</p>
       ) : (
         <>
-          <div className="flex flex-row justify-between">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <DashboardSummaryCard
               type={DashboardSummaryCardType.ActiveUsers}
               value={dashboard.users.active}
@@ -76,12 +76,14 @@ export function DashboardPage() {
             />
           </div>
 
-          <div className="flex flex-row justify-between gap-5">
-            <div className="flex min-w-0 flex-1 flex-col gap-5">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
+            <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
               <PlanControlCard plans={plans} />
               <ExamUsageCard examUsage={dashboard.examUsage} />
             </div>
-            <DisciplineDataCard subjects={dashboard.subjects} />
+            <div className="w-full min-w-0 xl:flex-[1.2]">
+              <DisciplineDataCard subjects={dashboard.subjects} />
+            </div>
           </div>
         </>
       )}

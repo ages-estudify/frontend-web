@@ -8,7 +8,7 @@ export default function Layout() {
         <AppSidebar />
       </aside>
 
-      <main className="ml-[200px] min-h-screen p-6">
+      <main className="ml-[200px] min-h-screen min-w-0 overflow-x-hidden p-4 sm:p-6">
         <Outlet />
       </main>
     </div>
