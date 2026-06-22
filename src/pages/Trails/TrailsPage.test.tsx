@@ -80,7 +80,7 @@ const portuguesePath: QuestionPath = {
 const createPayload: TrailPayload = {
   name: 'Redação',
   text: 'Texto dissertativo',
-  iconUrl: 'https://cdn/redacao.svg',
+  icon: '',
   order: 3,
   subjectId: 'subject-portuguese',
 };
@@ -93,9 +93,6 @@ async function fillCreateForm() {
   });
   fireEvent.change(screen.getByPlaceholderText('Resumo do conteúdo trabalhado nesta trilha'), {
     target: { value: createPayload.text },
-  });
-  fireEvent.change(screen.getByPlaceholderText('https://cdn.exemplo.com/icone.svg'), {
-    target: { value: createPayload.iconUrl },
   });
   fireEvent.change(screen.getByPlaceholderText('1'), {
     target: { value: String(createPayload.order) },
