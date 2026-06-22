@@ -1,9 +1,15 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { AppSidebar } from './app-sidebar';
 import { navItems } from './sidebar-items';
+
+const logoutMock = vi.fn();
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ logout: logoutMock }),
+}));
 
 vi.mock('../assets/SideBarLogo.png', () => ({
   default: 'sidebar-logo.png',
@@ -26,6 +32,10 @@ function renderSidebar(initialPath = '/') {
 }
 
 describe('AppSidebar', () => {
+  beforeEach(() => {
+    logoutMock.mockClear();
+  });
+
   it('renderiza a logo, o título e todos os itens de navegação', () => {
     renderSidebar();
 
@@ -64,5 +74,13 @@ describe('AppSidebar', () => {
 
     expect(logoutButton).toBeInTheDocument();
     expect(logoutButton).toHaveAttribute('type', 'button');
+  });
+
+  it('chama logout ao clicar em Sair', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: /sair/i }));
+
+    expect(logoutMock).toHaveBeenCalledTimes(1);
   });
 });
