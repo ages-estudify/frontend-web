@@ -1,10 +1,10 @@
-import { BookText, Home, Import, Route, SignalHigh, Users } from 'lucide-react';
+import { BookText, FileQuestion, Import, Route, SignalHigh, Users } from 'lucide-react';
 
 export const navItems = [
   {
     title: 'Questões',
     url: '/',
-    icon: Home,
+    icon: FileQuestion,
   },
   {
     title: 'Trilhas',

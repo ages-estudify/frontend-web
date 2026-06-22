@@ -16,6 +16,7 @@ import type {
   CreateQuestionPayload,
   Question,
   QuestionFormData,
+  QuestionOrigin,
   QuestionPath,
   UpdateQuestionPayload,
 } from '@/types/question.types';
@@ -348,7 +349,7 @@ export function QuestionsPage() {
                       </td>
 
                       <td className="px-5 py-4">
-                        <OriginBadge label={question.origin} />
+                        <OriginBadge origin={question.origin} />
                       </td>
 
                       <td className="px-5 py-4 text-sm text-[#475569]">
@@ -462,13 +463,18 @@ function CategoryBadge({ label }: CategoryBadgeProps) {
 }
 
 type OriginBadgeProps = {
-  label: string;
+  origin: QuestionOrigin;
 };
 
-function OriginBadge({ label }: OriginBadgeProps) {
+const ORIGIN_LABELS: Record<QuestionOrigin, string> = {
+  ORIGINAL: 'Original',
+  EXTERNAL: 'Simplificada',
+};
+
+function OriginBadge({ origin }: OriginBadgeProps) {
   return (
     <span className="inline-flex rounded-full border border-[#86EFAC] bg-[#F0FDF4] px-3 py-1 text-xs font-medium text-[#65A30D]">
-      {label}
+      {ORIGIN_LABELS[origin] ?? origin}
     </span>
   );
 }

@@ -15,7 +15,7 @@ import type {
   UpdateQuestionPayload,
 } from '@/types/question.types';
 
-import { countByStatus, type ExamReviewItem } from './exam-import.utils';
+import { countByStatus, humanizeExamImportError, type ExamReviewItem } from './exam-import.utils';
 
 type ExamImportReviewSheetProps = {
   open: boolean;
@@ -189,6 +189,7 @@ export function ExamImportReviewSheet({
       <Sheet open={open} onOpenChange={(nextOpen) => (!nextOpen ? onClose() : undefined)}>
         <SheetContent
           side="center"
+          showCloseButton={false}
           className="!left-1/2 !top-1/2 !h-auto !max-h-[90vh] !w-[min(92vw,900px)] !max-w-[900px] !translate-x-[-50%] !translate-y-[-50%] overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-2xl"
         >
           <section className="flex max-h-[90vh] flex-col bg-white">
@@ -197,9 +198,7 @@ export function ExamImportReviewSheet({
                 <h2 className="text-[18px] font-bold leading-none text-gray-900">
                   Revisão de Importação
                 </h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  Revise as questões importadas. Corrija as linhas com erro antes de concluir.
-                </p>
+                <p className="mt-2 text-sm text-slate-500">Revise as questões importadas.</p>
               </div>
 
               <button
@@ -322,7 +321,7 @@ function ReviewCard({ item, onEdit }: ReviewCardProps) {
       titleColor: '#0F172A',
       textColor: colors.redLabelCSV,
       icon: <AlertCircle className="h-5 w-5" style={{ color: colors.redLabelCSV }} />,
-      message: item.error || 'Erro ao importar a questão',
+      message: `Linha ${item.rowNumber}: ${humanizeExamImportError(item.error)}`,
     },
   } as const;
 
