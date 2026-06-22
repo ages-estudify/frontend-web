@@ -154,7 +154,7 @@ describe('ExamImportReviewSheet', () => {
 
     expect(screen.getByText('Qual é o valor de x?')).toBeInTheDocument();
     expect(screen.getByText('Linha com erro')).toBeInTheDocument();
-    expect(screen.getByText('Trilha não encontrada')).toBeInTheDocument();
+    expect(screen.getByText(/Trilha não encontrada/)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(questionService.getQuestionPaths).toHaveBeenCalled();

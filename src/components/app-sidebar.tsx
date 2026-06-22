@@ -2,12 +2,14 @@ import { LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 import SideBarLogo from '../assets/SideBarLogo.png';
+import { useAuth } from '@/hooks/useAuth';
 import { navItems } from './sidebar-items';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 
 export function AppSidebar() {
   const location = useLocation();
+  const { logout } = useAuth();
 
   return (
     <div className="flex h-full w-[200px] flex-col bg-white">
@@ -41,7 +43,7 @@ export function AppSidebar() {
       </nav>
 
       <div className="pb-10 px-2">
-        <Button type="button" onClick={() => {}} className="bg-transparent active:scale-95">
+        <Button type="button" onClick={logout} className="bg-transparent active:scale-95">
           <LogOut size={18} className="text-purple100" />
           <span className="text-purple100">Sair</span>
         </Button>
