@@ -10,7 +10,7 @@ export interface Trail {
 export interface TrailPayload {
   name: string;
   text: string;
-  iconUrl: string;
+  icon: string;
   order: number;
   subjectId: string;
 }

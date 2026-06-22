@@ -51,9 +51,6 @@ describe('TrailFormSheet', () => {
     fireEvent.change(screen.getByPlaceholderText('Resumo do conteúdo trabalhado nesta trilha'), {
       target: { value: ' Equações ' },
     });
-    fireEvent.change(screen.getByPlaceholderText('https://cdn.exemplo.com/icone.svg'), {
-      target: { value: ' https://cdn/icon.svg ' },
-    });
     fireEvent.change(screen.getByPlaceholderText('1'), {
       target: { value: '2' },
     });
@@ -67,10 +64,55 @@ describe('TrailFormSheet', () => {
       expect(onSubmit).toHaveBeenCalledWith({
         name: 'Álgebra',
         text: 'Equações',
-        iconUrl: 'https://cdn/icon.svg',
+        icon: '',
         order: 2,
         subjectId: 'subject-math',
       });
+    });
+  });
+
+  it('converte imagem selecionada em base64 e envia no campo image', async () => {
+    const onSubmit = vi.fn();
+
+    render(
+      <TrailFormSheet
+        open
+        mode="create"
+        subjectOptions={subjectOptions}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('Álgebra'), {
+      target: { value: 'Álgebra' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('1'), {
+      target: { value: '1' },
+    });
+    fireEvent.change(screen.getByLabelText('Selecionar disciplina'), {
+      target: { value: 'subject-math' },
+    });
+
+    const file = new File(['conteudo-da-imagem'], 'icone.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText('Selecionar ícone da trilha'), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('icone.png')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Criar Trilha' }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Álgebra',
+          subjectId: 'subject-math',
+          icon: expect.stringMatching(/^data:image\/png;base64,/),
+        })
+      );
     });
   });
 
@@ -95,7 +137,7 @@ describe('TrailFormSheet', () => {
     expect(screen.getByRole('heading', { name: 'Editar Trilha' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Geometria')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Figuras planas')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('https://cdn/geo.svg')).toBeInTheDocument();
+    expect(screen.getByAltText('Ícone da trilha')).toHaveAttribute('src', 'https://cdn/geo.svg');
     expect(screen.getByDisplayValue('3')).toBeInTheDocument();
     expect(screen.getByLabelText('Selecionar disciplina')).toHaveValue('subject-math');
     expect(screen.getByRole('option', { name: 'Matemática' })).toBeInTheDocument();

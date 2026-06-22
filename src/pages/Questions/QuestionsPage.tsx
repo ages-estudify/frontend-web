@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 
 import { QuestionFormSheet } from '@/components/questions/QuestionFormSheet';
@@ -23,11 +23,11 @@ import type {
 import { Title } from '@/components/title';
 import { formatApiError } from '@/utils/api-error';
 
+const BACKEND_PAGE_SIZE = 100;
 const UI_PAGE_SIZE = 20;
 
 export function QuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [totalElements, setTotalElements] = useState(0);
   const [paths, setPaths] = useState<QuestionPath[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -44,9 +44,6 @@ export function QuestionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [submitError, setSubmitError] = useState('');
 
-  const initRef = useRef(false);
-  const prevPageRef = useRef(1);
-
   const loadOptions = async () => {
     try {
       setIsLoadingOptions(true);
@@ -61,17 +58,38 @@ export function QuestionsPage() {
     }
   };
 
-  const loadPage = async (page: number) => {
+  const loadAllQuestions = async () => {
     try {
       setIsLoading(true);
 
-      const response = await getQuestions({
-        page: page - 1,
-        size: UI_PAGE_SIZE,
+      const firstResponse = await getQuestions({
+        page: 0,
+        size: BACKEND_PAGE_SIZE,
       });
 
-      setQuestions(response.content.filter((question) => question.enable));
-      setTotalElements(response.totalElements);
+      const total = firstResponse.totalElements;
+      const totalBackendPages = Math.ceil(total / BACKEND_PAGE_SIZE);
+
+      let allQuestions = [...firstResponse.content];
+
+      if (totalBackendPages > 1) {
+        const remainingRequests = Array.from({ length: totalBackendPages - 1 }, (_, index) =>
+          getQuestions({
+            page: index + 1,
+            size: BACKEND_PAGE_SIZE,
+          })
+        );
+
+        const remainingResponses = await Promise.all(remainingRequests);
+
+        remainingResponses.forEach((response) => {
+          allQuestions = allQuestions.concat(response.content);
+        });
+      }
+
+      const enabledQuestions = allQuestions.filter((question) => question.enable);
+
+      setQuestions(enabledQuestions);
     } catch (error) {
       console.error('Erro ao carregar questões:', error);
     } finally {
@@ -80,17 +98,9 @@ export function QuestionsPage() {
   };
 
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
     loadOptions();
-    loadPage(1);
+    loadAllQuestions();
   }, []);
-
-  useEffect(() => {
-    if (prevPageRef.current === currentPage) return;
-    prevPageRef.current = currentPage;
-    loadPage(currentPage);
-  }, [currentPage]);
 
   const getSubjectNameByPathId = useCallback(
     (pathId: string) => {
@@ -131,20 +141,27 @@ export function QuestionsPage() {
     });
   }, [questions, search, selectedCategory, getSubjectNameByPathId]);
 
-  const totalPages = Math.max(1, Math.ceil(totalElements / UI_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredQuestions.length / UI_PAGE_SIZE));
+
+  const paginatedQuestions = useMemo(() => {
+    const startIndex = (currentPage - 1) * UI_PAGE_SIZE;
+    const endIndex = startIndex + UI_PAGE_SIZE;
+
+    return filteredQuestions.slice(startIndex, endIndex);
+  }, [filteredQuestions, currentPage]);
 
   const paginationLabel = useMemo(() => {
-    if (totalElements === 0) {
+    if (filteredQuestions.length === 0) {
       return 'Mostrando questão 0–0 de 0';
     }
 
     const start = (currentPage - 1) * UI_PAGE_SIZE + 1;
-    const end = Math.min(currentPage * UI_PAGE_SIZE, totalElements);
+    const end = Math.min(currentPage * UI_PAGE_SIZE, filteredQuestions.length);
 
     return `Mostrando questão ${start.toLocaleString('pt-BR')}–${end.toLocaleString(
       'pt-BR'
-    )} de ${totalElements.toLocaleString('pt-BR')}`;
-  }, [currentPage, totalElements]);
+    )} de ${filteredQuestions.length.toLocaleString('pt-BR')}`;
+  }, [currentPage, filteredQuestions.length]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -193,7 +210,7 @@ export function QuestionsPage() {
 
     try {
       await deleteQuestion(id);
-      await loadPage(currentPage);
+      await loadAllQuestions();
     } catch (error) {
       console.error('Erro ao excluir questão:', error);
     }
@@ -213,11 +230,8 @@ export function QuestionsPage() {
       setIsFormSheetOpen(false);
       setSelectedQuestion(null);
       setFormData(initialQuestionFormState);
-      if (currentPage === 1) {
-        await loadPage(1);
-      } else {
-        setCurrentPage(1);
-      }
+      await loadAllQuestions();
+      setCurrentPage(1);
     } catch (error) {
       setSubmitError(formatApiError(error, 'Não foi possível salvar a questão.'));
     } finally {
@@ -309,14 +323,14 @@ export function QuestionsPage() {
                       Carregando questões...
                     </td>
                   </tr>
-                ) : filteredQuestions.length === 0 ? (
+                ) : paginatedQuestions.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-5 py-10 text-center text-sm text-[#64748B]">
                       Nenhuma questão encontrada.
                     </td>
                   </tr>
                 ) : (
-                  filteredQuestions.map((question, index) => (
+                  paginatedQuestions.map((question, index) => (
                     <tr key={question.id} className="border-b border-[#E5E7EB] last:border-b-0">
                       <td className="px-5 py-4 text-sm text-[#0F172A]">
                         #{(currentPage - 1) * UI_PAGE_SIZE + index + 1}

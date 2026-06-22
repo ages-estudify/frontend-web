@@ -23,7 +23,7 @@ const sampleTrail: Trail = {
 const payload: TrailPayload = {
   name: 'Álgebra',
   text: 'Equações e funções',
-  iconUrl: 'https://cdn/icon.svg',
+  icon: 'https://cdn/icon.svg',
   order: 1,
   subjectId: 'subject-math',
 };

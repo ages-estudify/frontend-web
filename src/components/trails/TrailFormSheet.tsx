@@ -1,9 +1,19 @@
-import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+  type DragEvent,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
+import { ImageUp, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { colors } from '@/constants/colors';
 import type { TrailFormData, TrailPayload, TrailSubjectOption } from '@/types/trail.types';
+import { readFileAsBase64 } from '@/utils/file.utils';
 
 type TrailFormSheetProps = {
   open: boolean;
@@ -65,10 +75,49 @@ function TrailFormSheetContent({
 }: Omit<TrailFormSheetProps, 'open'>) {
   const [name, setName] = useState(initialValues?.name ?? '');
   const [text, setText] = useState(initialValues?.text ?? '');
-  const [iconUrl, setIconUrl] = useState(initialValues?.iconUrl ?? '');
+  const [image, setImage] = useState(initialValues?.iconUrl ?? '');
+  const [selectedFileName, setSelectedFileName] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const [order, setOrder] = useState(initialValues?.order ?? '');
   const [subjectId, setSubjectId] = useState(initialValues?.subjectId ?? '');
   const [errors, setErrors] = useState<TrailFormErrors>({});
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function processFile(file: File | undefined | null) {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      console.error('Arquivo selecionado não é uma imagem.');
+      return;
+    }
+
+    try {
+      const base64 = await readFileAsBase64(file);
+      setImage(base64);
+      setSelectedFileName(file.name);
+    } catch (error) {
+      console.error('Erro ao carregar imagem:', error);
+    }
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    void processFile(event.target.files?.[0]);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+    void processFile(event.dataTransfer.files?.[0]);
+  }
+
+  function handleRemoveImage() {
+    setImage('');
+    setSelectedFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
 
   const title = mode === 'create' ? 'Nova Trilha' : 'Editar Trilha';
   const subtitle =
@@ -102,7 +151,7 @@ function TrailFormSheetContent({
     return {
       name: name.trim(),
       text: text.trim(),
-      iconUrl: iconUrl.trim(),
+      icon: image.trim(),
       order: parsedOrder,
       subjectId: subjectId.trim(),
     };
@@ -150,13 +199,84 @@ function TrailFormSheetContent({
             />
           </FormField>
 
-          <FormField label="URL do ícone">
+          <FormField label="Ícone da Trilha">
             <input
-              value={iconUrl}
-              onChange={(event) => setIconUrl(event.target.value)}
-              placeholder="https://cdn.exemplo.com/icone.svg"
-              className={inputClassName()}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              aria-label="Selecionar ícone da trilha"
+              onChange={handleFileChange}
+              className="hidden"
             />
+
+            {image ? (
+              <div className="relative flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4">
+                <img
+                  src={image}
+                  alt="Ícone da trilha"
+                  className="h-20 w-20 shrink-0 rounded-lg object-cover"
+                />
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-700">
+                    {selectedFileName || 'Imagem atual'}
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-2 h-9 rounded-lg px-3 text-sm font-medium text-white hover:opacity-90"
+                    style={{ backgroundColor: colors.buttonQuestion }}
+                  >
+                    Trocar imagem
+                  </Button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  aria-label="Remover imagem"
+                  className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={[
+                  'flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 text-center transition-colors',
+                  isDragging
+                    ? 'border-[var(--button-primary)] bg-slate-50'
+                    : 'border-gray-200 bg-white',
+                ].join(' ')}
+              >
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                  <ImageUp size={34} />
+                </div>
+
+                <p className="text-base font-semibold text-gray-800">Arraste sua imagem aqui</p>
+
+                <p className="mt-2 text-sm text-gray-500">ou clique para selecionar um arquivo</p>
+
+                <Button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="mt-4 h-10 rounded-lg px-4 text-sm font-medium text-white hover:opacity-90"
+                  style={{ backgroundColor: colors.buttonQuestion }}
+                >
+                  Selecionar Arquivo
+                </Button>
+              </div>
+            )}
           </FormField>
 
           <div className="grid gap-4 md:grid-cols-2">
