@@ -147,6 +147,7 @@ function payloadToCsvRowPatch(
 
 export function ImportCSVPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [showReview, setShowReview] = useState(false);
   const [, setIsSubmitting] = useState(false);
@@ -198,7 +199,13 @@ export function ImportCSVPage() {
 
     const nextReviewItems: ReviewItem[] = rows.map((row) => {
       const displayMeta = getRowDisplayMeta(row, paths);
-      const reviewStatus = resolveReviewStatus(row, paths, errorsByRow.get(row.rowNumber));
+      const importedQuestionId = successIdsByRow.get(row.rowNumber);
+      const reviewStatus = resolveReviewStatus(
+        row,
+        paths,
+        errorsByRow.get(row.rowNumber),
+        Boolean(importedQuestionId)
+      );
 
       return {
         id: `review-${row.rowNumber}`,
@@ -209,7 +216,7 @@ export function ImportCSVPage() {
         status: reviewStatus.status,
         error: reviewStatus.error,
         csvRow: row,
-        importedQuestionId: successIdsByRow.get(row.rowNumber),
+        importedQuestionId,
       };
     });
 
@@ -235,9 +242,7 @@ export function ImportCSVPage() {
     }
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
-
+  const processSelectedFile = async (file: File | null) => {
     setPageError('');
     setPageSuccess('');
 
@@ -282,6 +287,26 @@ export function ImportCSVPage() {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    void processSelectedFile(event.target.files?.[0] ?? null);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    void processSelectedFile(event.dataTransfer.files?.[0] ?? null);
+  };
+
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setReviewItems([]);
@@ -300,12 +325,7 @@ export function ImportCSVPage() {
       setEditingReviewItem(item);
 
       if (item.importedQuestionId) {
-        const questionResponse = await getQuestionById(item.importedQuestionId);
-
-        const question =
-          questionResponse && typeof questionResponse === 'object' && 'data' in questionResponse
-            ? questionResponse.data
-            : questionResponse;
+        const question = await getQuestionById(item.importedQuestionId);
 
         if (!question) {
           setFormMode('create');
@@ -353,7 +373,6 @@ export function ImportCSVPage() {
         }
       }
 
-      const hasImage = Boolean(payload.image);
       const savedIssues: string[] = [];
 
       if (!payload.text.trim()) {
@@ -364,12 +383,15 @@ export function ImportCSVPage() {
         savedIssues.push('Ordem não informada');
       }
 
+      const expectsImage = editingReviewItem.csvRow.has_image;
+      const hasImage = Boolean(payload.image);
+
       const nextStatus =
         savedIssues.length > 0
           ? { status: 'error' as const, error: savedIssues.join('. ') }
-          : hasImage
-            ? { status: 'success' as const, error: undefined }
-            : { status: 'missing_image' as const, error: undefined };
+          : expectsImage && !hasImage
+            ? { status: 'missing_image' as const, error: undefined }
+            : { status: 'success' as const, error: undefined };
 
       setReviewItems((previous) =>
         previous.map((item) =>
@@ -461,7 +483,12 @@ export function ImportCSVPage() {
             <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm">
               <label
                 htmlFor="questions-import-file"
-                className="flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#CBD5E1] bg-[#FAFAFA] px-6 text-center"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-6 text-center transition-colors ${
+                  isDragging ? 'border-[#9810FA] bg-[#F6EEFE]' : 'border-[#CBD5E1] bg-[#FAFAFA]'
+                }`}
               >
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F5F9] text-[#98A2B3]">
                   <Upload className="h-8 w-8" />
@@ -506,14 +533,17 @@ export function ImportCSVPage() {
               </div>
 
               <p className="mb-4 text-sm text-[#2445C2]">
-                O arquivo CSV deve conter as colunas abaixo (formato admin). Matéria e trilha podem
-                ser informadas por nome quando não houver path_id. A coluna <strong>number</strong>{' '}
-                é obrigatória no arquivo para revisão; a persistência no servidor depende de
-                atualização da API.
+                O arquivo CSV deve conter as colunas abaixo (formato admin). A matéria (
+                <strong>subject</strong>) e a trilha (<strong>content</strong>) são informadas por
+                nome. A coluna <strong>number</strong> é obrigatória no arquivo para revisão; a
+                persistência no servidor depende de atualização da API. A coluna{' '}
+                <strong>has_image</strong> (<strong>true</strong>/<strong>false</strong>) é
+                opcional: use <strong>true</strong> para sinalizar que a questão deve ter imagem —
+                ela aparece como "Falta Imagem" até você anexá-la na revisão.
               </p>
 
               <div className="rounded-lg border border-[#C7D7FE] bg-white px-4 py-3 text-sm text-[#0F172A]">
-                discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number
+                subject,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,type,year,number,has_image
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3">
@@ -718,16 +748,14 @@ function ReviewCard({ item, onEdit }: ReviewCardProps) {
           ) : null}
         </div>
 
-        {item.status !== 'success' ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onEdit}
-            className="h-8 rounded-lg border-[#E5E7EB] bg-white px-3 text-sm text-[#0F172A]"
-          >
-            Editar Questão
-          </Button>
-        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onEdit}
+          className="h-8 rounded-lg border-[#E5E7EB] bg-white px-3 text-sm text-[#0F172A]"
+        >
+          Editar Questão
+        </Button>
       </div>
     </div>
   );

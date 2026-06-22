@@ -5,6 +5,7 @@ import type { AdminQuestion } from '@/types/question.types';
 import {
   buildExamReviewItems,
   countByStatus,
+  humanizeExamImportError,
   parseExamCsvContent,
   readFileAsText,
   type ExamCsvRow,
@@ -62,6 +63,23 @@ Simulado,ENEM,1,Mat,Álg,"Quanto vale x, se x+2=4?",1,2,3,4,5,B,"Resposta: 2",20
       expect(rows).toHaveLength(1);
       expect(rows[0].question).toBe('Quanto vale x, se x+2=4?');
       expect(rows[0].answer_explanation).toBe('Resposta: 2');
+    });
+
+    it('respeita quebras de linha dentro de campos entre aspas (questão multilinha)', () => {
+      const csv = `exam_title,bank,exam_day,discipline,content,question,alternative_a,alternative_b,alternative_c,alternative_d,alternative_e,correct_answer,answer_explanation,year
+Simulado,ENEM,1,Inglês,Leitura e Interpretação,"A Teen's View
+
+It has some downsides, like anxiety in teens.",a,b,c,d,e,D,"Os downsides, ou seja, a ansiedade.",2022`;
+
+      const rows = parseExamCsvContent(csv);
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0].discipline).toBe('Inglês');
+      expect(rows[0].content).toBe('Leitura e Interpretação');
+      expect(rows[0].correct_answer).toBe('D');
+      expect(rows[0].year).toBe('2022');
+      expect(rows[0].question).toContain('downsides');
+      expect(rows[0].answer_explanation).toBe('Os downsides, ou seja, a ansiedade.');
     });
 
     it('mantém aspas escapadas como "" dentro do mesmo campo', () => {
@@ -213,6 +231,28 @@ Simulado,ENEM,1`;
       const file = new File(['linha1\nlinha2'], 'arquivo.csv', { type: 'text/csv' });
 
       await expect(readFileAsText(file)).resolves.toBe('linha1\nlinha2');
+    });
+  });
+
+  describe('humanizeExamImportError', () => {
+    it('traduz "Path not found" indicando matéria e trilha', () => {
+      const message = humanizeExamImportError(
+        "Path not found for discipline 'Português' and content 'Prosa'"
+      );
+
+      expect(message).toContain('Português');
+      expect(message).toContain('Prosa');
+      expect(message).toContain('não encontrada');
+      expect(message).not.toContain('Path not found');
+    });
+
+    it('usa mensagem padrão quando vazio', () => {
+      expect(humanizeExamImportError('')).toBe('Erro ao importar a linha.');
+      expect(humanizeExamImportError(undefined)).toBe('Erro ao importar a linha.');
+    });
+
+    it('mantém a mensagem original quando não há tradução conhecida', () => {
+      expect(humanizeExamImportError('Algo inesperado')).toBe('Algo inesperado');
     });
   });
 

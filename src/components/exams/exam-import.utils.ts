@@ -1,4 +1,4 @@
-import type { AdminQuestion } from '@/types/question.types';
+import type { AdminQuestionApi } from '@/types/question.types';
 
 export type ExamCsvRow = {
   rowNumber: number;
@@ -54,55 +54,63 @@ export const EXAM_CSV_HEADERS = [
   'year',
 ] as const;
 
-function parseCsvLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
+function parseCsvRecords(content: string): string[][] {
+  const normalized = content.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = '';
   let insideQuotes = false;
 
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const nextChar = line[index + 1];
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+    const nextChar = normalized[index + 1];
 
-    if (char === '"' && insideQuotes && nextChar === '"') {
-      current += '"';
-      index += 1;
+    if (insideQuotes) {
+      if (char === '"' && nextChar === '"') {
+        field += '"';
+        index += 1;
+      } else if (char === '"') {
+        insideQuotes = false;
+      } else {
+        field += char;
+      }
       continue;
     }
 
     if (char === '"') {
-      insideQuotes = !insideQuotes;
-      continue;
+      insideQuotes = true;
+    } else if (char === ',') {
+      record.push(field);
+      field = '';
+    } else if (char === '\n') {
+      record.push(field);
+      field = '';
+      records.push(record);
+      record = [];
+    } else {
+      field += char;
     }
-
-    if (char === ',' && !insideQuotes) {
-      result.push(current);
-      current = '';
-      continue;
-    }
-
-    current += char;
   }
 
-  result.push(current);
-  return result.map((value) => value.trim());
+  record.push(field);
+  records.push(record);
+
+  // Descarta registros totalmente vazios (ex.: quebra de linha final do arquivo).
+  return records.filter((row) => !(row.length === 1 && row[0].trim() === ''));
 }
 
 export function parseExamCsvContent(content: string): ExamCsvRow[] {
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const records = parseCsvRecords(content);
 
-  if (lines.length <= 1) return [];
+  if (records.length <= 1) return [];
 
-  const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase());
+  const headers = records[0].map((header) => header.trim().toLowerCase());
 
-  return lines.slice(1).map((line, index) => {
-    const values = parseCsvLine(line);
-
+  return records.slice(1).map((values, index) => {
     const getValue = (name: string) => {
       const headerIndex = headers.indexOf(name);
-      return headerIndex >= 0 ? (values[headerIndex] ?? '') : '';
+      return headerIndex >= 0 ? (values[headerIndex] ?? '').trim() : '';
     };
 
     return {
@@ -143,7 +151,7 @@ export async function readFileAsText(file: File): Promise<string> {
 export function buildExamReviewItems(
   rows: ExamCsvRow[],
   errors: ExamImportError[],
-  importedQuestions: AdminQuestion[]
+  importedQuestions: AdminQuestionApi[]
 ): ExamReviewItem[] {
   const errorsByRow = new Map<number, string>();
   errors.forEach((entry) => {
@@ -153,7 +161,7 @@ export function buildExamReviewItems(
   const remainingQuestions = [...importedQuestions];
   const consumed = new Set<string>();
 
-  const takeQuestionForRow = (row: ExamCsvRow): AdminQuestion | undefined => {
+  const takeQuestionForRow = (row: ExamCsvRow): AdminQuestionApi | undefined => {
     const exactMatchIndex = remainingQuestions.findIndex(
       (question) => question.question.trim() === row.question.trim() && !consumed.has(question.id)
     );
@@ -203,6 +211,18 @@ export function buildExamReviewItems(
       importedQuestionId: question?.id,
     };
   });
+}
+
+export function humanizeExamImportError(raw?: string): string {
+  if (!raw || !raw.trim()) return 'Erro ao importar a linha.';
+
+  const pathNotFound = raw.match(/Path not found for discipline '(.*)' and content '(.*)'/);
+  if (pathNotFound) {
+    const [, discipline, content] = pathNotFound;
+    return `Matéria "${discipline}" com trilha "${content}" não encontrada. Confira se a matéria e a trilha existem no sistema e estão escritas exatamente igual — maiúsculas e acentos contam.`;
+  }
+
+  return raw;
 }
 
 export function countByStatus(items: ExamReviewItem[]): {

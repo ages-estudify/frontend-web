@@ -32,7 +32,12 @@ describe('ImportCSVPage', () => {
       {
         id: 'path-algebra',
         name: 'Álgebra',
-        subject: { id: 'sub-math', name: 'Matemática' },
+        text: 'Álgebra',
+        icon_url: '',
+        schedule_position: 0,
+        trail_position: 0,
+        subject_id: 'sub-math',
+        subject: { id: 'sub-math', name: 'Matemática', icon_url: '' },
       },
     ]);
     vi.mocked(questionService.importQuestions).mockResolvedValue({
@@ -80,5 +85,41 @@ describe('ImportCSVPage', () => {
     expect(screen.getByText('Questão teste')).toBeInTheDocument();
     expect(screen.getByText('Matemática')).toBeInTheDocument();
     expect(screen.getByText('Álgebra')).toBeInTheDocument();
+  });
+
+  it('não marca erro de matéria/trilha quando o backend importou a linha mas os paths locais não casam', async () => {
+    vi.mocked(questionService.getQuestionPaths).mockResolvedValue([]);
+
+    render(<ImportCSVPage />);
+
+    const input = document.querySelector('#questions-import-file') as HTMLInputElement;
+    const csvContent = `${adminCsvHeader}\n${adminCsvRow}`;
+    const file = new File([csvContent], 'questoes.csv', { type: 'text/csv' });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Revisão de Importação' })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/não encontrada/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Questão teste')).toBeInTheDocument();
+  });
+
+  it('marca "Falta Imagem" quando a coluna has_image é true', async () => {
+    render(<ImportCSVPage />);
+
+    const input = document.querySelector('#questions-import-file') as HTMLInputElement;
+    const header = `${adminCsvHeader},has_image`;
+    const row = `${adminCsvRow},true`;
+    const file = new File([`${header}\n${row}`], 'questoes.csv', { type: 'text/csv' });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Revisão de Importação' })).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Esta questão não tem uma imagem anexada')).toBeInTheDocument();
   });
 });

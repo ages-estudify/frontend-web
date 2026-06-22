@@ -3,11 +3,11 @@ import { LoginPage } from '../pages/LoginPage';
 import { QuestionsPage } from '../pages/Questions';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import Layout from '../layout';
-import { TrackPage } from '../pages/TestPage';
 import { ExamsPage } from '../pages/ExamsPage';
 import { ImportCSVPage } from '../pages/ImportCSV';
 import { UsersPage } from '../pages/UsersPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { TrailsPage } from '../pages/Trails';
 
 export const router = createBrowserRouter([
   {
@@ -24,7 +24,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'trilha',
-        element: <TrackPage />,
+        element: <TrailsPage />,
       },
       {
         path: 'simulados',

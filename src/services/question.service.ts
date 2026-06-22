@@ -1,15 +1,16 @@
 import api, { handleApiError } from './api';
+import { readFileAsBase64 } from '@/utils/file.utils';
 import {
   buildAdminCreatePayload,
   buildAdminUpdatePayload,
   mapAdminQuestionToQuestion,
 } from './question.mapper';
 import type {
-  AdminQuestion,
   AdminQuestionApi,
   AdminQuestionsListResponse,
   CreateQuestionPayload,
   ImportQuestionsResponse,
+  Question,
   QuestionByIdApiResponse,
   QuestionExam,
   QuestionPath,
@@ -88,9 +89,9 @@ export const getQuestions = async (filters?: QuestionsFilters): Promise<Question
   }
 };
 
-async function fetchAllAdminQuestions(filters?: QuestionsFilters): Promise<AdminQuestion[]> {
+async function fetchAllAdminQuestions(filters?: QuestionsFilters): Promise<AdminQuestionApi[]> {
   let page = 0;
-  let allQuestions: AdminQuestion[] = [];
+  let allQuestions: AdminQuestionApi[] = [];
   let totalElements = 0;
 
   do {
@@ -138,7 +139,7 @@ export const linkUnlinkedQuestionsToExam = async (
 export const getQuestionsByMockExamId = async (
   mockExamId: string,
   options?: { expectedCount?: number }
-): Promise<AdminQuestion[]> => {
+): Promise<AdminQuestionApi[]> => {
   try {
     let questions = await fetchAllAdminQuestions({
       mockExamId,
@@ -164,9 +165,9 @@ export const getQuestionsByMockExamId = async (
   }
 };
 
-export const getQuestionById = async (id: string) => {
+export const getQuestionById = async (id: string): Promise<Question> => {
   try {
-    const response = await api.get(`${QUESTIONS_BASE_PATH}/${id}`);
+    const response = (await api.get(`${QUESTIONS_BASE_PATH}/${id}`)) as unknown;
 
     if (response && typeof response === 'object' && 'data' in response) {
       return (response as QuestionByIdApiResponse).data;
@@ -204,7 +205,20 @@ export const createQuestion = async (
 ): Promise<CreateQuestionResult | undefined> => {
   try {
     const paths = await getQuestionPaths();
-    const adminPayload = buildAdminCreatePayload(payload, paths);
+    let adminPayload = buildAdminCreatePayload(payload, paths);
+
+    if (payload.image && payload.image instanceof File) {
+      adminPayload = {
+        ...adminPayload,
+        image: await readFileAsBase64(payload.image),
+      };
+    } else if (payload.image) {
+      adminPayload = {
+        ...adminPayload,
+        image: payload.image,
+      };
+    }
+
     const data = await api.post(QUESTIONS_BASE_PATH, adminPayload);
 
     if (data && typeof data === 'object' && 'id' in data) {
@@ -220,7 +234,20 @@ export const createQuestion = async (
 export const updateQuestion = async (id: string, payload: UpdateQuestionPayload): Promise<void> => {
   try {
     const paths = await getQuestionPaths();
-    const adminPayload = buildAdminUpdatePayload(payload, paths);
+    let adminPayload = buildAdminUpdatePayload(payload, paths);
+
+    if (payload.image && payload.image instanceof File) {
+      adminPayload = {
+        ...adminPayload,
+        image: await readFileAsBase64(payload.image),
+      };
+    } else if (payload.image) {
+      adminPayload = {
+        ...adminPayload,
+        image: payload.image,
+      };
+    }
+
     await api.put(`${QUESTIONS_BASE_PATH}/${id}`, adminPayload);
   } catch (error) {
     return handleApiError(error);

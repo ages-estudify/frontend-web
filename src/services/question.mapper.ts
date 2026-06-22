@@ -66,9 +66,13 @@ function buildAlternativesArray(
 }
 
 function buildAlternativesObject(alternatives: CreateQuestionPayload['alternatives']) {
-  const byLetter = Object.fromEntries(
-    alternatives.map((alternative) => [alternative.letter, alternative.text])
-  ) as AdminQuestionAlternatives;
+  const byLetter = alternatives.reduce<AdminQuestionAlternatives>(
+    (acc, alternative) => ({
+      ...acc,
+      [alternative.letter]: alternative.text,
+    }),
+    { A: '', B: '', C: '', D: '', E: '' }
+  );
 
   return {
     A: byLetter.A ?? '',
