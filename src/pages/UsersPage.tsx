@@ -158,6 +158,7 @@ export function UsersPage() {
     setFormData({
       full_name: user.full_name,
       email: user.email,
+      password: '',
       phone_number: user.phone_number ?? '',
       role: user.role,
       plan_end_date: user.plan_end_date ? user.plan_end_date.split('T')[0] : '',
